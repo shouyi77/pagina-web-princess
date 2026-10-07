@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>La Palma Princess - Servicios</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Hanken+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+	<link rel="icon" href="unnamed.webp">
+	<link rel="stylesheet" href="styles.css">
+</head>
+<body class="inner">
+
+	<header id="header">
+		<a href="index.html" class="logo">Hotel Princess La Palma</a>
+		<button class="menu-toggle" aria-label="Abrir menú" aria-expanded="false" aria-controls="nav">Menú</button>
+		<nav id="nav">
+			<ul>
+				<li><a href="index.html">Inicio</a></li>
+				<li><a href="habitaciones.html">Habitaciones</a></li>
+				<li><a href="servicios.html">Servicios</a></li>
+				<li><a href="galeria.html">Galería</a></li>
+			</ul>
+		</nav>
+        <button type="button" class="user-link" id="user-btn" aria-haspopup="dialog" aria-label="Usuario">
+			<span class="user-icon" aria-hidden="true">
+				<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="currentColor"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"/></svg>
+			</span>
+			<span class="user-text" id="user-label">Usuario</span>
+		</button>
+	</header>
+
+    <form class="quickbar" id="quickbar" action="reservas.html" method="get">
+        <label class="qb-in">Entrada <input type="date" name="checkin" id="qb-checkin" required></label>
+        <label class="qb-out">Salida <input type="date" name="checkout" id="qb-checkout" required></label>
+
+        <div class="qb-guests">
+            <span class="qb-label">Huéspedes</span>
+            <button type="button" id="guests-btn" class="guests-btn" aria-expanded="false" aria-controls="guests-panel"></button>
+            <div id="guests-panel" class="guests-panel" hidden>
+                <div id="rooms-list"></div>
+                <button type="button" id="add-room" class="add-room">Añadir habitación</button>
+            </div>
+            <input type="hidden" name="adults" id="qb-adults" value="2">
+            <input type="hidden" name="children" id="qb-children" value="0">
+            <input type="hidden" name="rooms" id="qb-rooms" value="1">
+        </div>
+
+        <label class="qb-promo">Código promocional <input type="text" name="promo" placeholder="6 dígitos" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" title="El código tiene 6 dígitos" autocomplete="off"></label>
+        <label class="qb-resident"><input type="checkbox" name="resident" value="1"> Soy residente</label>
+        <button type="submit" class="btn btn-small">Reservar</button>
+    </form>
+
+	<main>
+		<section class="page-hero">
+            <h1>Servicios</h1>
+            <p>Lo que necesitas para que la estancia sea cómoda.</p>
+        </section>
+        <section class="section">
+            <ul class="services services-light">
+                <li><h3>Desayuno en la terraza</h3><p>Todos los días de 7:30 a 11:00.</p></li>
+                <li><h3>Piscina y solárium</h3><p>Abierta de 9:00 a 20:00.</p></li>
+                <li><h3>Spa</h3><p>Masajes y circuito de aguas, con cita previa.</p></li>
+                <li><h3>Traslado al aeropuerto</h3><p>Bajo petición, con 24 horas de antelación.</p></li>
+            </ul>
+        </section>
+	</main>
+
+	<footer id="footer">
+        <div class="footer-cta">
+            <h2>¿Preparas tu escapada?</h2>
+            <a href="reservas.html" class="btn">Reservar una habitación</a>
+        </div>
+
+        <div class="footer-grid">
+            <div class="footer-col footer-brand">
+                <a href="index.html" class="logo">Hotel Princess La Palma</a>
+                <p>Un hotel pequeño a cinco minutos de la playa, con desayuno en la terraza, piscina y spa.</p>
+                <form class="newsletter" id="newsletter" novalidate>
+                    <label for="nl-email">Recibe nuestras ofertas por email</label>
+                    <div class="nl-row">
+                        <input id="nl-email" type="email" placeholder="tu@email.com" required>
+                        <button type="submit" class="btn btn-small">Suscribirme</button>
+                    </div>
+                    <p id="nl-status" role="status" aria-live="polite"></p>
+                </form>
+            </div>
+
+            <div class="footer-col">
+                <h3>Contacto</h3>
+                <ul>
+                    <li>Carretera de la Costa, Fuencaliente</li>
+					<li><a href="tel:+34900000000">📞 +34 900 000 000</a></li>
+					<li><a href="mailto:hotelPrincess@gmail.com">✉ hotelPrincess@gmail.com</a></li>
+					<li><a href="https://wa.me/34900000000" target="_blank" rel="noopener">WhatsApp: 613 48 90 55</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-col">
+                <h3>Explora</h3>
+                <ul>
+                    <li><a href="habitaciones.html">Habitaciones</a></li>
+                    <li><a href="servicios.html">Servicios</a></li>
+                    <li><a href="galeria.html">Galería</a></li>
+                    <li><a href="reservas.html">Reservas</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-col">
+                <h3>Síguenos</h3>
+                <ul class="social">
+                    <li><a href="https://www.instagram.com/princesshotels/" target="_blank" rel="noopener">Instagram</a></li>
+					<li><a href="https://www.facebook.com/PrincessHotelsResorts/" target="_blank" rel="noopener">Facebook</a></li>
+					<li><a href="https://x.com/PrincessHotels" target="_blank" rel="noopener">X</a></li>
+					<li><a href="https://www.tiktok.com/@princesshotelsresorts" target="_blank" rel="noopener">TikTok</a></li>
+					<li><a href="https://www.youtube.com/channel/UC6Jx3EjAbSS7NRlfNhyW1PA" target="_blank">YouTube</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; <span id="year">2026</span> Hotel Princess La Palma</p>
+            <ul>
+                <li><a href="#">Política de privacidad</a></li>
+                <li><a href="#">Aviso legal</a></li>
+                <li><a href="#" id="open-cookies">Cookies</a></li>
+            </ul>
+        </div>
+    </footer>
+
+	<div class="cookie-banner" id="cookie-banner" role="dialog" aria-labelledby="cookie-title" hidden>
+        <div class="cookie-main">
+            <h2 id="cookie-title">Cookies</h2>
+            <p>Usamos cookies para que la web funcione y para analizar cómo se usa. Puedes aceptarlas, rechazarlas o elegir cuáles activar.</p>
+            <div class="cookie-options" id="cookie-options" hidden>
+                <label><input type="checkbox" checked disabled> Necesarias</label>
+                <label><input type="checkbox" id="ck-analytics"> Analíticas</label>
+                <label><input type="checkbox" id="ck-marketing"> Marketing</label>
+            </div>
+        </div>
+        <div class="cookie-actions">
+            <button type="button" class="btn btn-small btn-outline" id="cookie-config">Configurar</button>
+            <button type="button" class="btn btn-small btn-outline" id="cookie-reject">Rechazar todas</button>
+            <button type="button" class="btn btn-small" id="cookie-accept">Aceptar todas</button>
+        </div>
+    </div>
+
+    <div class="modal" id="user-modal" hidden>
+        <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="user-title">
+            <button type="button" class="modal-close" id="user-close" aria-label="Cerrar">×</button>
+
+            <div id="user-form-view">
+                <h2 id="user-title">Crea tu cuenta</h2>
+                <p class="modal-sub">Regístrate para guardar tus datos en tus próximas reservas.</p>
+                <form id="user-form" novalidate>
+                    <div class="field"><label for="u-name">Nombre</label><input id="u-name" type="text" autocomplete="name" required></div>
+                    <div class="field"><label for="u-email">Email</label><input id="u-email" type="email" autocomplete="email" required></div>
+                    <div class="field"><label for="u-pass">Contraseña</label><input id="u-pass" type="password" minlength="8" autocomplete="new-password" required></div>
+                    <div class="field"><label for="u-pass2">Repetir contraseña</label><input id="u-pass2" type="password" autocomplete="new-password" required></div>
+                    <div class="field check"><label><input id="u-terms" type="checkbox"> Acepto las condiciones de uso</label></div>
+                    <p id="user-status" role="status" aria-live="polite"></p>
+                    <button type="submit" class="btn">Registrarme</button>
+                </form>
+            </div>
+
+            <div id="user-logged-view" hidden>
+                <h2>Sesión iniciada</h2>
+                <p class="modal-sub" id="user-logged-text"></p>
+                <button type="button" class="btn" id="user-logout">Cerrar sesión</button>
+            </div>
+        </div>
+    </div>
+
+	<script src="script.js"></script>
+</body>
+</html>
