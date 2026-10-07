@@ -421,7 +421,7 @@
 		const loggedView = $('#user-logged-view');
 		const userForm = $('#user-form');
 		const userStatus = $('#user-status');
-		const USER_KEY = 'hotel-marea-user';
+		const USER_KEY = 'la-palma-princess-user';
 		let opener = null;
 
 		function getUser() {
