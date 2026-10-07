@@ -172,6 +172,15 @@
         </div>
     </div>
 
+	<!-- ═══════════════════ MÚSICA DE FONDO ═══════════════════ -->
+	<audio id="bg-music" loop preload="none">
+		<source src="musica.mp3" type="audio/mpeg">
+	</audio>
+	<button type="button" class="music-btn" id="music-btn" aria-label="Activar música" aria-pressed="false" title="Música">
+		<svg class="music-note" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V6l10-2v12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6.5" cy="18" r="2.5" fill="currentColor"/><circle cx="16.5" cy="16" r="2.5" fill="currentColor"/></svg>
+		<span class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+	</button>
+	
 	<script src="script.js"></script>
 </body>
 </html>
