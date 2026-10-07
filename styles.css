@@ -91,11 +91,11 @@ a { color: inherit; }
 .slide.active { opacity: 1; }
 /* Fotos del hero (en la misma carpeta que index.html) */
 .slide { background-size: cover; background-position: center; }
-.s1 { background-image: url("foto1.jpg"); }
-.s2 { background-image: url("foto2.jpg"); }
-.s3 { background-image: url("foto3.jpg"); }
-.s4 { background-image: url("foto4.jpg"); }
-.s5 { background-image: url("foto5.jpg"); }
+.s1 { background-image: url("fotos/foto1.jpg"); }
+.s2 { background-image: url("fotos/foto2.jpg"); }
+.s3 { background-image: url("fotos/foto3.jpg"); }
+.s4 { background-image: url("fotos/foto4.jpg"); }
+.s5 { background-image: url("fotos/foto5.jpg"); }
 .hero-content { position: relative; z-index: 2; }
 .hero-content p { font-size: 1.25rem; }
 
@@ -472,9 +472,9 @@ input.invalid { border-color: #b3261e; }
     background-position: center;
     border-radius: 8px;
 }
-.room-1 { background-image: url("h1.jpg"); }
-.room-2 { background-image: url("h2.webp"); }
-.room-3 { background-image: url("h3.jpg"); }
+.room-1 { background-image: url("fotos/h1.jpg"); }
+.room-2 { background-image: url("fotos/h2.webp"); }
+.room-3 { background-image: url("fotos/h3.jpg"); }
 
 /* ---------- Botón volver arriba ---------- */
 .to-top {
