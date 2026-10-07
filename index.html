@@ -108,6 +108,10 @@
 				<button type="button" class="gallery-item" data-src="fotos/volcan.png" data-title="Vistas del volcán">
 			        <img src="fotos/volcan.png" alt="Vistas del volcán" loading="lazy">
 			    </button>
+				<div id="lightbox" class="lightbox hidden">
+					<button class="lightbox-close" aria-label="Cerrar">Cerrar</button>
+					<div class="lightbox-view"><p id="lightbox-title"></p></div>
+				</div>
 			</div>
 		</section>
 
@@ -317,11 +321,6 @@
 		<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5l-7 7h4v7h6v-7h4z" fill="currentColor"/></svg>
 	</button>
 
-	<div id="lightbox" class="lightbox hidden">
-		<button class="lightbox-close" aria-label="Cerrar">Cerrar</button>
-		<div class="lightbox-view"><p id="lightbox-title"></p></div>
-	</div>
-	
 	<!-- ═══════════════════════ SCRIPTS ═══════════════════════ -->
 	<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 	<script src="script.js"></script>
