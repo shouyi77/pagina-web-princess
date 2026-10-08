@@ -10,23 +10,39 @@
 	// Coordenadas del hotel: las usan el mapa y el tiempo (cópialas de Google Maps si quieres afinarlas)
 	const HOTEL = [28.503096663660557, -17.873709776845214];
 	
-		/* ---- Pantalla de carga ---- */
+	/* ---- Pantalla de carga ---- */
 	const loader = $('#loader');
 	if (loader) {
-		const MIN_TIME = 1200; // milisegundos que se ve como mínimo
-		const startTime = Date.now();
-
-		function hideLoader() {
-			const wait = Math.max(0, MIN_TIME - (Date.now() - startTime));
-			setTimeout(function () {
-				loader.classList.add('hide');
-				// Cuando termina el desvanecido, se elimina del todo
-				setTimeout(function () { loader.remove(); }, 700);
-			}, wait);
-		}
-
-		if (document.readyState === 'complete') hideLoader();
-		else window.addEventListener('load', hideLoader);
+	    // Verificamos si la pantalla de carga ya se mostró en esta sesión
+	    let loaderShown = false;
+	    try {
+	        loaderShown = sessionStorage.getItem('loader-shown') === '1';
+	    } catch (e) { /* sin almacenamiento */ }
+	
+	    if (loaderShown) {
+	        // Si ya se mostró previamente, ocultamos/eliminamos el loader al instante
+	        loader.remove();
+	    } else {
+	        // Es la primera vez en la sesión: lo guardamos en sessionStorage
+	        try {
+	            sessionStorage.setItem('loader-shown', '1');
+	        } catch (e) { /* sin almacenamiento */ }
+	
+	        const MIN_TIME = 1200; // milisegundos que se ve como mínimo
+	        const startTime = Date.now();
+	
+	        function hideLoader() {
+	            const wait = Math.max(0, MIN_TIME - (Date.now() - startTime));
+	            setTimeout(function () {
+	                loader.classList.add('hide');
+	                // Cuando termina el desvanecido, se elimina del todo
+	                setTimeout(function () { loader.remove(); }, 700);
+	            }, wait);
+	        }
+	
+	        if (document.readyState === 'complete') hideLoader();
+	        else window.addEventListener('load', hideLoader);
+	    }
 	}
 
 	/* ---- Cabecera: fondo sólido al hacer scroll ---- */
