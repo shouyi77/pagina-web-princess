@@ -565,7 +565,7 @@
 	/* ---- Mapa de ubicación (Leaflet, con plan B) ---- */
 	const mapaEl = $('#mapa');
 	if (mapaEl) {
-		const hotel = [28.4577, -17.8465]; // pon aquí TUS coordenadas
+		const hotel = [28.50281674456159, -17.873247890620103]; // pon aquí TUS coordenadas
 
 		if (location.protocol === 'file:' || !window.L) {
 			// Plan B: mapa incrustado de OpenStreetMap (funciona sin servidor)
