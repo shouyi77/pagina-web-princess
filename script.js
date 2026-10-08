@@ -7,6 +7,8 @@
 	const root = document.documentElement;
 	root.classList.add('js');
 	window.addEventListener('load', function () { root.classList.add('loaded'); });
+	// Coordenadas del hotel: las usan el mapa y el tiempo (cópialas de Google Maps si quieres afinarlas)
+	const HOTEL = [28.503096663660557, -17.873709776845214];
 	
 		/* ---- Pantalla de carga ---- */
 	const loader = $('#loader');
@@ -106,9 +108,8 @@
 	all('.gallery-intro h2', 'left');
 	all('.gallery-intro p', 'right');
 	alternate('.card');
-	alternate('.quotes li');
 	alternate('.services li');
-	alternate('.gallery-item');
+	alternate('.gallery .gallery-item');
 
 	$$('.room').forEach(function (room, i) {
 		const side = i % 2 ? 'right' : 'left';
@@ -508,7 +509,7 @@
 		/* ---- Mapa de ubicación (Leaflet) ---- */
 	const mapaEl = $('#mapa');
 	if (mapaEl && window.L) {
-		const hotel = [28.503096663660557, -17.873709776845214]; // PROVISIONAL: cámbialas por las reales
+		const hotel = HOTEL;
 
 		const mapa = L.map('mapa', { scrollWheelZoom: false }).setView(hotel, 13);
 
@@ -553,7 +554,7 @@
 	/* ---- Widget del tiempo (Open-Meteo) ---- */
 	const weatherEl = $('#weather');
 	if (weatherEl) {
-		const LAT = 28.47, LON = -17.85; // Fuencaliente (aprox.)
+		const LAT = HOTEL[0].toFixed(3), LON = HOTEL[1].toFixed(3);
 		const url = 'https://api.open-meteo.com/v1/forecast' +
 			'?latitude=' + LAT + '&longitude=' + LON +
 			'&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code' +
