@@ -684,6 +684,48 @@
 		form.addEventListener('reset', function () { setTimeout(updateSummary, 0); });
 		updateSummary();
 	}
+
+		/* ---- Servicios: pestañas con imagen ---- */
+	const svcTabs = $$('.svc-tab');
+	if (svcTabs.length) {
+		const explorer = $('#svc-explorer');
+		const svcPanels = $$('.svc-panel');
+		let svcCurrent = 0;
+
+		function selectService(i, focus) {
+			svcCurrent = i;
+			svcTabs.forEach(function (tab, n) {
+				const on = n === i;
+				tab.setAttribute('aria-selected', on);
+				tab.tabIndex = on ? 0 : -1;
+				svcPanels[n].classList.toggle('active', on);
+			});
+			if (focus) svcTabs[i].focus();
+		}
+
+		function stopAuto() { explorer.classList.remove('auto'); }
+
+		svcTabs.forEach(function (tab, i) {
+			tab.addEventListener('click', function () { stopAuto(); selectService(i); });
+			tab.addEventListener('keydown', function (e) {
+				const last = svcTabs.length - 1;
+				let next = null;
+				if (e.key === 'ArrowDown' || e.key === 'ArrowRight') next = i === last ? 0 : i + 1;
+				else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') next = i === 0 ? last : i - 1;
+				else if (e.key === 'Home') next = 0;
+				else if (e.key === 'End') next = last;
+				if (next !== null) { e.preventDefault(); stopAuto(); selectService(next, true); }
+			});
+		});
+
+		// Cambio automático: avanza cuando termina la barra de progreso
+		if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) stopAuto();
+		explorer.addEventListener('animationend', function (e) {
+			if (e.pseudoElement === '::after' && explorer.classList.contains('auto')) {
+				selectService((svcCurrent + 1) % svcTabs.length);
+			}
+		});
+	}
 	
 	/* ---- Año del pie ---- */
 	const year = $('#year');
