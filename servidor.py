@@ -81,7 +81,7 @@ def chat():
         for intento in range(3):
             try:
                 response = client.models.generate_content(
-                    model='gemini-2.0-flash',
+                    model='gemini-3.8-flash',
                     contents=pregunta_usuario,
                     config=types.GenerateContentConfig(
                         system_instruction=CONTEXTO_HOTEL,
@@ -101,6 +101,10 @@ def chat():
         print("--- ERROR DETALLADO EN EL SERVIDOR ---")
         traceback.print_exc()
         return jsonify({"respuesta": "Lo siento, ha ocurrido un error de conexión con la IA. Vuelve a intentarlo en unos segundos."}), 500
+
+
+if __name__ == '__main__':
+    app.run(port=5000, debug=True)
 
 
 if __name__ == '__main__':
