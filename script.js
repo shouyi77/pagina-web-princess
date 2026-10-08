@@ -562,25 +562,35 @@
 		refreshUser();
 	}
 
-		/* ---- Mapa de ubicación (Leaflet) ---- */
+	/* ---- Mapa de ubicación (Leaflet, con plan B) ---- */
 	const mapaEl = $('#mapa');
-	if (mapaEl && window.L) {
-		const hotel = HOTEL;
+	if (mapaEl) {
+		const hotel = [28.4577, -17.8465]; // pon aquí TUS coordenadas
 
-		const mapa = L.map('mapa', { scrollWheelZoom: false }).setView(hotel, 13);
+		if (location.protocol === 'file:' || !window.L) {
+			// Plan B: mapa incrustado de OpenStreetMap (funciona sin servidor)
+			const d = 0.02;
+			const bbox = [hotel[1] - d, hotel[0] - d, hotel[1] + d, hotel[0] + d].join('%2C');
+			mapaEl.innerHTML =
+				'<iframe title="Mapa con la ubicación del hotel" loading="lazy" ' +
+				'style="width:100%;height:100%;border:0;border-radius:8px" ' +
+				'src="https://www.openstreetmap.org/export/embed.html?bbox=' + bbox +
+				'&layer=mapnik&marker=' + hotel[0] + '%2C' + hotel[1] + '"></iframe>';
+		} else {
+			const mapa = L.map('mapa', { scrollWheelZoom: false }).setView(hotel, 13);
 
-		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-			maxZoom: 19,
-			attribution: '&copy; Colaboradores de <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-		}).addTo(mapa);
+			L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+				maxZoom: 19,
+				attribution: '&copy; Colaboradores de <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+			}).addTo(mapa);
 
-		L.marker(hotel).addTo(mapa)
-			.bindPopup('<strong>La Palma Princess</strong><br>Fuencaliente, La Palma')
-			.openPopup();
+			L.marker(hotel).addTo(mapa)
+				.bindPopup('<strong>La Palma Princess</strong><br>Fuencaliente, La Palma')
+				.openPopup();
 
-		// Activa el zoom con la rueda solo cuando haces clic en el mapa
-		mapa.on('click', function () { mapa.scrollWheelZoom.enable(); });
-		mapa.on('mouseout', function () { mapa.scrollWheelZoom.disable(); });
+			mapa.on('click', function () { mapa.scrollWheelZoom.enable(); });
+			mapa.on('mouseout', function () { mapa.scrollWheelZoom.disable(); });
+		}
 	}
 
 	/* ---- Música de fondo con ondas ---- */
