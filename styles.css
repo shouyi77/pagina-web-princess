@@ -515,15 +515,17 @@ input.invalid { border-color: #b3261e; }
 .weather {
 	display: flex; flex-direction: column; justify-content: center; align-items: center;
 	gap: .6rem; padding: 2rem 1.5rem; text-align: center; border-radius: 8px;
-	background: linear-gradient(160deg, var(--sea), var(--ink)); color: var(--white);
+	/* Gradiente aclarado manteniendo el tono marino y excelente contraste */
+	background: linear-gradient(160deg, #1d6a8a, #0d384d); 
+	color: #ffffff;
 	box-shadow: 0 6px 20px rgba(0, 0, 0, .15);
 }
 .weather-icon { font-size: 4rem; line-height: 1; }
 .weather-info { display: flex; flex-direction: column; line-height: 1.3; }
-.weather-place { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--sun); }
-.weather-temp { font: 600 3rem/1.1 var(--serif); }
-.weather-desc { font-size: 1.05rem; }
-.weather-extra { margin-top: .4rem; font-size: .9rem; opacity: .85; }
+.weather-place { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #ffd166; } /* Amarillo sol de alto contraste */
+.weather-temp { font: 600 3rem/1.1 var(--serif); color: #ffffff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3); }
+.weather-desc { font-size: 1.05rem; color: #ffffff; }
+.weather-extra { margin-top: .4rem; font-size: .95rem; opacity: 1; color: #f0f8ff; font-weight: 500; } /* Eliminada la opacidad para ver bien la lluvia */
 
 @media (max-width: 800px) {
 	.location-grid { grid-template-columns: 1fr; }
