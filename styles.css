@@ -268,7 +268,7 @@ input.invalid { border-color: #b3261e; }
 	.guests-panel { left: 0; right: 0; width: auto; }
 }
 
-/* Texto previo a la galería: empuja las fotos fuera de la pantalla inicial */
+/* Texto previo a la galería */
 .gallery-intro { min-height: 0; }
 .gallery-intro { padding-bottom: 3rem; }
 .gallery-intro + .section { padding-top: 3rem; }
@@ -358,7 +358,6 @@ input.invalid { border-color: #b3261e; }
 
 /* ---------- Botón de usuario ---------- */
 #header .logo { margin-right: auto; }
-/* Usuario: icono en círculo + texto, dentro de una píldora */
 .user-link {
 	order: 2; margin-left: 1.8rem; display: inline-flex; align-items: center; gap: .6rem;
 	padding: .45em 1.2em; background: rgba(255, 255, 255, .1);
@@ -372,7 +371,6 @@ input.invalid { border-color: #b3261e; }
 @media (hover: hover) {
 	.user-link:hover { background: var(--white); color: var(--ink); transform: translateY(-2px); }
 }
-/* En móvil solo el icono, para dejar sitio al menú */
 @media (max-width: 520px) {
 	.user-text { display: none; }
 	.user-link { padding: .25em; }
@@ -432,10 +430,7 @@ input.invalid { border-color: #b3261e; }
 .gallery > .gallery-item:nth-child(5) { grid-column: 1;     grid-row: 3; }
 .gallery > .gallery-item:nth-child(6) { grid-column: 2 / 4; grid-row: 3; }
 
-/* Foto del volcán en la bienvenida (botón que abre el visor) */
 .welcome-img.gallery-item { display: block; width: 100%; }
-
-/* Pie de foto legible sobre la imagen del visor */
 .lightbox-view p { background: rgba(8, 20, 25, .7); padding: .3em .8em; border-radius: 6px; }
 
 @media (max-width: 800px) {
@@ -498,7 +493,6 @@ input.invalid { border-color: #b3261e; }
 	50%      { transform: scaleY(1); }
 }
 
-/* Si el usuario pidió menos movimiento, las barras quedan quietas */
 @media (prefers-reduced-motion: reduce) {
 	.music-btn.on .bars i { animation: none; transform: scaleY(.6); }
 }
@@ -515,17 +509,16 @@ input.invalid { border-color: #b3261e; }
 .weather {
 	display: flex; flex-direction: column; justify-content: center; align-items: center;
 	gap: .6rem; padding: 2rem 1.5rem; text-align: center; border-radius: 8px;
-	/* Gradiente aclarado manteniendo el tono marino y excelente contraste */
 	background: linear-gradient(160deg, #1d6a8a, #0d384d); 
 	color: #ffffff;
 	box-shadow: 0 6px 20px rgba(0, 0, 0, .15);
 }
 .weather-icon { font-size: 4rem; line-height: 1; }
 .weather-info { display: flex; flex-direction: column; line-height: 1.3; }
-.weather-place { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #ffd166; } /* Amarillo sol de alto contraste */
+.weather-place { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #ffd166; }
 .weather-temp { font: 600 3rem/1.1 var(--serif); color: #ffffff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3); }
 .weather-desc { font-size: 1.05rem; color: #ffffff; }
-.weather-extra { margin-top: .4rem; font-size: .95rem; opacity: 1; color: #f0f8ff; font-weight: 500; } /* Eliminada la opacidad para ver bien la lluvia */
+.weather-extra { margin-top: .4rem; font-size: .95rem; opacity: 1; color: #f0f8ff; font-weight: 500; }
 
 @media (max-width: 800px) {
 	.location-grid { grid-template-columns: 1fr; }
@@ -544,9 +537,8 @@ input.invalid { border-color: #b3261e; }
 }
 .loader.hide { opacity: 0; visibility: hidden; }
 
-/* NUEVO: Estilo y animación para el logo en la pantalla de carga */
 .loader-img {
-	width: 80px; /* Puedes ajustar el tamaño del logo según prefieras */
+	width: 80px;
 	height: auto;
 	animation: loader-in .8s ease both;
 }
@@ -663,11 +655,10 @@ input.invalid { border-color: #b3261e; }
 	background: var(--sun); color: var(--ink); font: 700 .85rem var(--sans);
 }
 
-/* FOTOS (cambia los nombres si los tuyos son distintos) */
 .svc-i1 { background: url("fotos/parking.jpg") center/cover; }
 .svc-i2 { background: url("fotos/gym.jpg") center/cover; }
 .svc-i3 { background: url("fotos/Spa.jpg") center/cover; }
-.svc-i4 { background: url("fotos/pisci.jpg") center/cover; }
+.svc-i4 { background: url("fotos/piscina.jpg") center/cover; }
 .svc-i5 { background: url("fotos/hamacas.jpg") center/cover; }
 .svc-i6 { background: url("fotos/deportes.jpg") center/cover; }
 .svc-i7 { background: url("fotos/niños.jpg") center/cover; }
@@ -691,7 +682,7 @@ input.invalid { border-color: #b3261e; }
 	.svc-panel.active .svc-bg, .svc-explorer.auto .svc-tab[aria-selected="true"]::after { animation: none; }
 }
 
-/* ---------- Barra de progreso de lectura (Scroll Indicator) ---------- */
+/* ---------- Barra de progreso de lectura ---------- */
 #scroll-progress {
 	position: fixed;
 	top: 0;
@@ -699,26 +690,24 @@ input.invalid { border-color: #b3261e; }
 	height: 3px;
 	width: 0%;
 	background: var(--sun);
-	z-index: 100; /* Siempre por encima de la cabecera */
+	z-index: 100;
 	transition: width 0.08s ease-out;
 	pointer-events: none;
 }
 
-/* ---------- Barra de reserva inteligente (Animación al scroll) ---------- */
+/* ---------- Barra de reserva inteligente ---------- */
 .quickbar {
-	/* Aseguramos una transición fluida al moverse */
 	transition: transform 0.35s ease, opacity 0.35s ease;
 	will-change: transform;
 }
 
-/* Clase añadida por JS cuando el usuario baja en la página */
 .quickbar.qb-hidden {
 	transform: translateY(calc(-100% - var(--header-h)));
 	opacity: 0;
-	pointer-events: none; /* Evita clics accidentales mientras está oculta */
+	pointer-events: none;
 }
 
-/* ---------- Mejora visual Sección Introducción Galería ---------- */
+/* ---------- Sección Introducción Galería ---------- */
 .gallery-intro {
 	display: grid;
 	grid-template-columns: 1.2fr 1fr;
@@ -757,7 +746,6 @@ input.invalid { border-color: #b3261e; }
 	border-radius: 0 6px 6px 0;
 }
 
-/* Tarjetas informativas del lado derecho */
 .gallery-features {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
@@ -793,7 +781,6 @@ input.invalid { border-color: #b3261e; }
 	color: #666;
 }
 
-/* Adaptación para pantallas móviles */
 @media (max-width: 768px) {
 	.gallery-intro {
 		grid-template-columns: 1fr;
@@ -804,19 +791,17 @@ input.invalid { border-color: #b3261e; }
 	}
 }
 
-/* Estilos para el botón de la tarjeta del tiempo */
 a.weather {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	text-decoration: none; /* Elimina el subrayado de enlace */
-	color: inherit;        /* Mantiene el color del texto original */
+	text-decoration: none;
+	color: inherit;
 	cursor: pointer;
 	transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
 }
 
-/* Efecto hover al pasar el ratón */
 a.weather:hover {
 	transform: translateY(-4px);
 	filter: brightness(1.08);
@@ -864,7 +849,6 @@ a.weather:hover {
 	border-radius: 0 6px 6px 0;
 }
 
-/* Grid de tarjetas clicables del lado derecho */
 .services-features {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
@@ -914,7 +898,6 @@ a.weather:hover {
 	margin-top: 2px;
 }
 
-/* Adaptabilidad móvil */
 @media (max-width: 768px) {
 	.services-intro {
 		grid-template-columns: 1fr;
@@ -928,3 +911,55 @@ a.weather:hover {
 #galeria {
     scroll-margin-top: 100px;
 }
+
+/* ---------- Chatbot ---------- */
+.chatbot-floating-btn {
+	position: fixed; right: 1.2rem; bottom: 5rem; z-index: 36;
+	padding: .7em 1.2em; border: 0; border-radius: 999px;
+	background: var(--sun); color: var(--ink); font: 700 1rem var(--sans);
+	cursor: pointer; box-shadow: 0 4px 14px rgba(0, 0, 0, .3);
+	transition: background .2s, transform .2s;
+}
+@media (hover: hover) {
+	.chatbot-floating-btn:hover { background: #f7c96d; transform: translateY(-3px); }
+}
+
+.chatbot-box {
+	position: fixed; right: 1.2rem; bottom: 9rem; z-index: 36;
+	width: 340px; max-width: calc(100vw - 2.4rem);
+	height: 460px; max-height: 70vh;
+	display: flex; flex-direction: column;
+	background: var(--white); color: var(--ink);
+	border-radius: 12px; overflow: hidden;
+	box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
+}
+.chatbot-box[hidden] { display: none; }
+
+.chatbot-header {
+	display: flex; align-items: center; justify-content: space-between;
+	padding: .8rem 1rem; background: var(--ink); color: var(--white);
+}
+.chatbot-header h4 { margin: 0; font: 600 1.05rem var(--serif); }
+.chatbot-header button {
+	width: 32px; height: 32px; border: 0; border-radius: 50%;
+	background: none; color: inherit; font-size: 1.6rem; line-height: 1; cursor: pointer;
+}
+.chatbot-header button:hover { background: rgba(255, 255, 255, .15); }
+
+.chatbot-messages-area {
+	flex: 1; overflow-y: auto; padding: 1rem;
+	display: flex; flex-direction: column; gap: .6rem;
+	background: var(--foam);
+}
+.msg-bot, .msg-user {
+	max-width: 85%; padding: .55em .9em; border-radius: 14px;
+	font-size: .95rem; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.msg-bot  { align-self: flex-start; background: var(--white); color: var(--ink); border-bottom-left-radius: 4px; }
+.msg-user { align-self: flex-end; background: var(--ink); color: var(--white); border-bottom-right-radius: 4px; }
+
+.chatbot-input-area {
+	display: flex; gap: .5rem; padding: .7rem;
+	border-top: 1px solid var(--foam); background: var(--white);
+}
+.chatbot-input-area input { flex: 1; min-width: 0; height: 40px; padding: 0 .8em; }
