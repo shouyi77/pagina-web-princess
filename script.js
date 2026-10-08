@@ -45,11 +45,51 @@
 	    }
 	}
 
-	/* ---- Cabecera: fondo sólido al hacer scroll ---- */
+	/* ---- Cabecera, barra de progreso de lectura y control de scroll ---- */
 	const header = $('#header');
-	function onScroll() { header.classList.toggle('scrolled', window.scrollY > 40); }
-	window.addEventListener('scroll', onScroll, { passive: true });
-	onScroll();
+	const progressBar = $('#scroll-progress');
+	const quickbar = $('#quickbar');
+	let lastScrollY = window.scrollY;
+	const scrollThreshold = 10; // Margen para evitar parpadeos con movimientos leves
+
+	function handleScroll() {
+		const currentScrollY = window.scrollY;
+		
+		// 1. Cabecera fija con sombra al bajar
+		if (header) {
+			header.classList.toggle('scrolled', currentScrollY > 40);
+		}
+
+		// 2. Barra de progreso superior
+		if (progressBar) {
+			const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+			if (docHeight > 0) {
+				const progressPercent = Math.min(100, Math.max(0, (currentScrollY / docHeight) * 100));
+				progressBar.style.width = progressPercent + '%';
+			}
+		}
+
+		// 3. Ocultar / Mostrar la barra de reserva dinámicamente
+		if (quickbar) {
+			const guestsPanel = $('#guests-panel');
+			const isPanelOpen = guestsPanel && !guestsPanel.hidden;
+
+			// Si el desplegable de huéspedes está abierto, no la ocultamos
+			if (!isPanelOpen && Math.abs(currentScrollY - lastScrollY) > scrollThreshold) {
+				if (currentScrollY > lastScrollY && currentScrollY > 120) {
+					// Bajando por la página: se esconde hacia arriba
+					quickbar.classList.add('qb-hidden');
+				} else {
+					// Subiendo por la página: vuelve a aparecer
+					quickbar.classList.remove('qb-hidden');
+				}
+				lastScrollY = currentScrollY;
+			}
+		}
+	}
+
+	window.addEventListener('scroll', handleScroll, { passive: true });
+	handleScroll();
 
 		/* ---- Botón "volver arriba" ---- */
 	const toTop = $('#to-top');
@@ -747,3 +787,46 @@
 	const year = $('#year');
 	if (year) year.textContent = new Date().getFullYear();
 })();
+
+/* ---- Persistencia de datos de reserva en toda la web ---- */
+const STORAGE_KEY = 'princess_booking_data';
+
+function saveQuickbarState() {
+	if (!qbIn || !qbOut) return;
+	const data = {
+		checkin: qbIn.value,
+		checkout: qbOut.value,
+		adults: $('#qb-adults') ? $('#qb-adults').value : '2',
+		children: $('#qb-children') ? $('#qb-children').value : '0',
+		rooms: $('#qb-rooms') ? $('#qb-rooms').value : '1',
+		promo: $('input[name="promo"]') ? $('input[name="promo"]').value : '',
+		resident: $('input[name="resident"]') ? $('input[name="resident"]').checked : false
+	};
+	try {
+		sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+	} catch (e) {}
+}
+
+function loadQuickbarState() {
+	try {
+		const raw = sessionStorage.getItem(STORAGE_KEY);
+		if (!raw) return;
+		const data = JSON.parse(raw);
+
+		if (qbIn && data.checkin) qbIn.value = data.checkin;
+		if (qbOut && data.checkout) qbOut.value = data.checkout;
+		
+		const promoInput = $('input[name="promo"]');
+		if (promoInput && data.promo) promoInput.value = data.promo;
+
+		const resInput = $('input[name="resident"]');
+		if (resInput && data.resident !== undefined) resInput.checked = data.resident;
+	} catch (e) {}
+}
+
+// Escuchar cambios en la quickbar para guardar automáticamente
+if (quickbar) {
+	loadQuickbarState();
+	quickbar.addEventListener('input', saveQuickbarState);
+	quickbar.addEventListener('change', saveQuickbarState);
+}
