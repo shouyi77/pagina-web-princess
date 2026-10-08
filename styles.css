@@ -539,6 +539,14 @@ input.invalid { border-color: #b3261e; }
 	transition: opacity .6s ease, visibility .6s ease;
 }
 .loader.hide { opacity: 0; visibility: hidden; }
+
+/* NUEVO: Estilo y animación para el logo en la pantalla de carga */
+.loader-img {
+	width: 80px; /* Puedes ajustar el tamaño del logo según prefieras */
+	height: auto;
+	animation: loader-in .8s ease both;
+}
+
 .loader-logo {
 	font: 600 clamp(2rem, 6vw, 3.5rem) var(--serif);
 	animation: loader-in .8s ease both;
@@ -560,7 +568,6 @@ input.invalid { border-color: #b3261e; }
 	0%   { transform: translateX(-100%); }
 	100% { transform: translateX(250%); }
 }
-
 
 /* ---------- Reservas: formulario + resumen ---------- */
 .booking-layout {
