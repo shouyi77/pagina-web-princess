@@ -66,38 +66,66 @@
 		        <span class="sub-tag">Experiencia Princess</span>
 		        <h2>Un vistazo a tu próxima escapada</h2>
 		        <p>Hemos seleccionado cuidadosamente los rincones más icónicos de nuestro resort en Fuencaliente para que comiences a vivir tus vacaciones antes de llegar.</p>
-		        <p class="hint-text">💡 <em>Haz clic en cualquier imagen del catálogo para ampliarla y explorar los detalles.</em></p>
+		        <p class="hint-text">💡 <em>Haz clic en cualquier tarjeta para ir al catálogo de fotos o en una imagen para ampliarla.</em></p>
 		    </div>
 		
+		    <!-- Modificado: enlaces <a> apuntando a #galeria -->
 		    <div class="gallery-features">
-		        <div class="feat-card">
+		        <a href="#galeria" class="feat-card">
 		            <span class="feat-icon">🌊</span>
 		            <div class="feat-info">
-		                <strong>7 Piscinas</strong>
+		                <strong>7 Piscinas ↗</strong>
 		                <span>Agua dulce y vistas al océano</span>
 		            </div>
-		        </div>
-		        <div class="feat-card">
+		        </a>
+		
+		        <a href="#galeria" class="feat-card">
 		            <span class="feat-icon">🌿</span>
 		            <div class="feat-info">
-		                <strong>Spa & Wellness</strong>
+		                <strong>Spa & Wellness ↗</strong>
 		                <span>Circuito térmico y masajes</span>
 		            </div>
-		        </div>
-		        <div class="feat-card">
+		        </a>
+		
+		        <a href="#galeria" class="feat-card">
 		            <span class="feat-icon">🛋️</span>
 		            <div class="feat-info">
-		                <strong>Suites & Confort</strong>
+		                <strong>Suites & Confort ↗</strong>
 		                <span>Espacios de diseño canario</span>
 		            </div>
-		        </div>
-		        <div class="feat-card">
+		        </a>
+		
+		        <a href="#galeria" class="feat-card">
 		            <span class="feat-icon">🌅</span>
 		            <div class="feat-info">
-		                <strong>Atardeceres Únicos</strong>
+		                <strong>Atardeceres Únicos ↗</strong>
 		                <span>En plena naturaleza volcánica</span>
 		            </div>
-		        </div>
+		        </a>
+		    </div>
+		</section>
+		
+		<!-- Modificado: id="galeria" añadido para recibir el desplazamiento -->
+		<section class="section" id="galeria">
+		    <div class="gallery">
+		        <button type="button" class="gallery-item" data-src="fotos/hamacas.jpg" data-title="Terraza al atardecer">
+		            <img src="fotos/hamacas.jpg" alt="Terraza al atardecer" loading="lazy">
+		        </button>
+		        <button type="button" class="gallery-item" data-src="fotos/piscina.jpg" data-title="Piscinas">
+		            <img src="fotos/piscina.jpg" alt="Piscinas" loading="lazy">
+		        </button>
+		        <button type="button" class="gallery-item" data-src="fotos/gym.jpg" data-title="Gimnasio">
+		            <img src="fotos/gym.jpg" alt="Gimnasio" loading="lazy">
+		        </button>
+		        <button type="button" class="gallery-item" data-src="fotos/teneguia-habitaciones.jpg" data-title="Suite">
+		            <img src="fotos/teneguia-habitaciones.jpg" alt="Suite" loading="lazy">
+		        </button>
+		        <button type="button" class="gallery-item" data-src="fotos/baño.jpg" data-title="Baño">
+		            <img src="fotos/baño.jpg" alt="Baño" loading="lazy">
+		        </button>
+		        <button type="button" class="gallery-item" data-src="fotos/Spa.jpg" data-title="Spa">
+		            <img src="fotos/Spa.jpg" alt="Spa" loading="lazy">
+		        </button>
 		    </div>
 		</section>
 
