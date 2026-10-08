@@ -124,7 +124,12 @@ body { overflow-x: hidden; }
 .gallery { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, clamp(240px, 40vh, 420px)); gap: .75rem; }
 
 /* ---------- Formulario ---------- */
-.booking { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem 1.5rem; max-width: 760px; }
+.booking { 
+	display: grid; 
+	grid-template-columns: 1fr 1fr; 
+	gap: 1.2rem 1.5rem; 
+	width: 100%; 
+}
 .field { display: flex; flex-direction: column; gap: .35rem; }
 .field.full { grid-column: 1 / -1; }
 label { font-weight: 700; font-size: .95rem; }
@@ -561,6 +566,7 @@ input.invalid { border-color: #b3261e; }
 .booking-layout {
 	display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr);
 	gap: 2rem; align-items: start; max-width: 1100px;
+	margin-inline: auto;
 }
 .booking-layout .booking { max-width: none; }
 
