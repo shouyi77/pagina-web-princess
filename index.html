@@ -22,6 +22,12 @@
 
 <body>
 
+	<script>
+	    if (sessionStorage.getItem('loader-shown') === '1') {
+	        document.write('<style>#loader { display: none !important; }</style>');
+	    }
+	</script>
+	
 	<!-- ═══════════════════ PANTALLA DE CARGA ═══════════════════ -->
 	<div class="loader" id="loader" aria-hidden="true">
 		<span class="loader-logo">La Palma Princess</span>
