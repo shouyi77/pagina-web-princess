@@ -673,3 +673,30 @@ input.invalid { border-color: #b3261e; }
 @media (prefers-reduced-motion: reduce) {
 	.svc-panel.active .svc-bg, .svc-explorer.auto .svc-tab[aria-selected="true"]::after { animation: none; }
 }
+
+/* ---------- Barra de progreso de lectura (Scroll Indicator) ---------- */
+#scroll-progress {
+	position: fixed;
+	top: 0;
+	left: 0;
+	height: 3px;
+	width: 0%;
+	background: var(--sun);
+	z-index: 100; /* Siempre por encima de la cabecera */
+	transition: width 0.08s ease-out;
+	pointer-events: none;
+}
+
+/* ---------- Barra de reserva inteligente (Animación al scroll) ---------- */
+.quickbar {
+	/* Aseguramos una transición fluida al moverse */
+	transition: transform 0.35s ease, opacity 0.35s ease;
+	will-change: transform;
+}
+
+/* Clase añadida por JS cuando el usuario baja en la página */
+.quickbar.qb-hidden {
+	transform: translateY(calc(-100% - var(--header-h)));
+	opacity: 0;
+	pointer-events: none; /* Evita clics accidentales mientras está oculta */
+}
