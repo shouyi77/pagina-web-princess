@@ -713,3 +713,87 @@ input.invalid { border-color: #b3261e; }
 	opacity: 0;
 	pointer-events: none; /* Evita clics accidentales mientras está oculta */
 }
+
+/* ---------- Mejora visual Sección Introducción Galería ---------- */
+.gallery-intro {
+	display: grid;
+	grid-template-columns: 1.2fr 1fr;
+	gap: 3rem;
+	align-items: center;
+	padding-top: 2rem;
+	padding-bottom: 2rem;
+}
+
+.gallery-intro-text .sub-tag {
+	display: inline-block;
+	font-size: 0.85rem;
+	text-transform: uppercase;
+	letter-spacing: 2px;
+	color: var(--sun, #c08b5c);
+	font-weight: 700;
+	margin-bottom: 0.75rem;
+}
+
+.gallery-intro-text h2 {
+	font-size: clamp(1.8rem, 3vw, 2.4rem);
+	margin-bottom: 1rem;
+}
+
+.gallery-intro-text p {
+	line-height: 1.6;
+	color: rgba(0, 0, 0, 0.75);
+}
+
+.gallery-intro-text .hint-text {
+	margin-top: 1.2rem;
+	font-size: 0.95rem;
+	background: rgba(0, 0, 0, 0.03);
+	padding: 0.75rem 1rem;
+	border-left: 3px solid var(--sun, #c08b5c);
+	border-radius: 0 6px 6px 0;
+}
+
+/* Tarjetas informativas del lado derecho */
+.gallery-features {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 1rem;
+}
+
+.feat-card {
+	display: flex;
+	align-items: center;
+	gap: 0.85rem;
+	padding: 1rem;
+	background: #ffffff;
+	border: 1px solid rgba(0, 0, 0, 0.08);
+	border-radius: 12px;
+	box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+}
+
+.feat-icon {
+	font-size: 1.8rem;
+	line-height: 1;
+}
+
+.feat-info strong {
+	display: block;
+	font-size: 0.95rem;
+	color: var(--ink, #111);
+}
+
+.feat-info span {
+	font-size: 0.8rem;
+	color: #666;
+}
+
+/* Adaptación para pantallas móviles */
+@media (max-width: 768px) {
+	.gallery-intro {
+		grid-template-columns: 1fr;
+		gap: 2rem;
+	}
+	.gallery-features {
+		grid-template-columns: 1fr;
+	}
+}
