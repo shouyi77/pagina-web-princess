@@ -11,7 +11,7 @@
 	<link rel="stylesheet" href="styles.css">
 </head>
 <body class="inner">
-
+ 
 	<header id="header">
 		<a href="index.html" class="logo">Hotel Princess La Palma</a>
 		<button class="menu-toggle" aria-label="Abrir menú" aria-expanded="false" aria-controls="nav">Menú</button>
@@ -31,11 +31,11 @@
 			<span class="user-text" id="user-label">Usuario</span>
 		</button>
 	</header>
-
+ 
     <form class="quickbar" id="quickbar" action="reservas.html" method="get">
         <label class="qb-in">Entrada <input type="date" name="checkin" id="qb-checkin" required></label>
         <label class="qb-out">Salida <input type="date" name="checkout" id="qb-checkout" required></label>
-
+ 
         <div class="qb-guests">
             <span class="qb-label">Huéspedes</span>
             <button type="button" id="guests-btn" class="guests-btn" aria-expanded="false" aria-controls="guests-panel"></button>
@@ -47,33 +47,165 @@
             <input type="hidden" name="children" id="qb-children" value="0">
             <input type="hidden" name="rooms" id="qb-rooms" value="1">
         </div>
-
+ 
         <label class="qb-promo">Código promocional <input type="text" name="promo" placeholder="6 dígitos" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" title="El código tiene 6 dígitos" autocomplete="off"></label>
         <label class="qb-resident"><input type="checkbox" name="resident" value="1"> Soy residente</label>
         <button type="submit" class="btn btn-small">Reservar</button>
     </form>
-
+ 
 	<main>
 		<section class="page-hero">
             <h1>Servicios</h1>
-            <p>Lo que necesitas para que la estancia sea cómoda.</p>
+            <p>Todo lo que necesitas para que tu estancia sea cómoda, activa o simplemente tranquila.</p>
         </section>
+ 
+        <!-- ▼ INTRODUCCIÓN ▼ -->
         <section class="section">
+            <div class="svc-intro">
+                <h2>Todo incluido en un mismo lugar</h2>
+                <p>En La Palma Princess hemos pensado en cada detalle para que no tengas que preocuparte de nada. Desde que llegas y aparcas sin coste hasta que te tumbas junto a una de nuestras siete piscinas, el hotel está diseñado para que disfrutes de la isla a tu ritmo.</p>
+                <p>Tanto si viajas en familia como en pareja, aquí encontrarás espacios para descansar, cuidarte, practicar deporte o entretener a los más pequeños. Elige un servicio y descubre qué te ofrece.</p>
+            </div>
+        </section>
+ 
+        <!-- ▼ EXPLORADOR DE SERVICIOS (pestañas + imagen dinámica) ▼ -->
+        <section class="section section-sand">
+            <div class="svc-explorer auto" id="svc-explorer">
+ 
+                <div class="svc-tabs" role="tablist" aria-label="Servicios del hotel" aria-orientation="vertical">
+                    <button type="button" class="svc-tab" role="tab" id="svc-tab-1" aria-controls="svc-panel-1" aria-selected="true"><span class="ico" aria-hidden="true">🅿️</span>Parking gratuito</button>
+                    <button type="button" class="svc-tab" role="tab" id="svc-tab-2" aria-controls="svc-panel-2" aria-selected="false" tabindex="-1"><span class="ico" aria-hidden="true">🏋️</span>Gimnasio</button>
+                    <button type="button" class="svc-tab" role="tab" id="svc-tab-3" aria-controls="svc-panel-3" aria-selected="false" tabindex="-1"><span class="ico" aria-hidden="true">💆</span>Aqua Princess Spa</button>
+                    <button type="button" class="svc-tab" role="tab" id="svc-tab-4" aria-controls="svc-panel-4" aria-selected="false" tabindex="-1"><span class="ico" aria-hidden="true">🏊</span>7 piscinas exteriores</button>
+                    <button type="button" class="svc-tab" role="tab" id="svc-tab-5" aria-controls="svc-panel-5" aria-selected="false" tabindex="-1"><span class="ico" aria-hidden="true">🌴</span>Terrazas</button>
+                    <button type="button" class="svc-tab" role="tab" id="svc-tab-6" aria-controls="svc-panel-6" aria-selected="false" tabindex="-1"><span class="ico" aria-hidden="true">⚽</span>Actividades y deportes</button>
+                    <button type="button" class="svc-tab" role="tab" id="svc-tab-7" aria-controls="svc-panel-7" aria-selected="false" tabindex="-1"><span class="ico" aria-hidden="true">🧒</span>Servicio para niños</button>
+                </div>
+ 
+                <div class="svc-panels">
+ 
+                    <article class="svc-panel active" role="tabpanel" id="svc-panel-1" aria-labelledby="svc-tab-1">
+                        <div class="svc-img"><div class="svc-bg svc-i1"></div><span class="svc-chip">Incluido</span></div>
+                        <div class="svc-body">
+                            <h3>Parking gratuito</h3>
+                            <p>Llega en coche y olvídate de buscar sitio. Los huéspedes disponen de aparcamiento sin coste durante toda su estancia, ideal para recorrer La Palma a tu aire.</p>
+                            <ul class="svc-details">
+                                <li>Sin coste adicional durante toda la estancia</li>
+                                <li>Cerca de la entrada del hotel</li>
+                                <li>Perfecto para excursiones por la isla</li>
+                            </ul>
+                        </div>
+                    </article>
+ 
+                    <article class="svc-panel" role="tabpanel" id="svc-panel-2" aria-labelledby="svc-tab-2">
+                        <div class="svc-img"><div class="svc-bg svc-i2"></div><span class="svc-chip">Bienestar</span></div>
+                        <div class="svc-body">
+                            <h3>Gimnasio</h3>
+                            <p>Mantén tu rutina de entrenamiento también de vacaciones. Nuestro gimnasio cuenta con máquinas de cardio y de fuerza para que te muevas a tu manera.</p>
+                            <ul class="svc-details">
+                                <li>Equipamiento de cardio y musculación</li>
+                                <li>Acceso para los huéspedes del hotel</li>
+                                <li>Ideal antes de un día de playa o senderismo</li>
+                            </ul>
+                        </div>
+                    </article>
+ 
+                    <article class="svc-panel" role="tabpanel" id="svc-panel-3" aria-labelledby="svc-tab-3">
+                        <div class="svc-img"><div class="svc-bg svc-i3"></div><span class="svc-chip">Relax</span></div>
+                        <div class="svc-body">
+                            <h3>Aqua Princess Spa</h3>
+                            <p>Un espacio pensado para desconectar. En el Aqua Princess Spa puedes disfrutar de un circuito de aguas y de tratamientos y masajes para recuperar energía.</p>
+                            <ul class="svc-details">
+                                <li>Circuito de aguas</li>
+                                <li>Masajes y tratamientos</li>
+                                <li>Recomendable reservar con antelación</li>
+                            </ul>
+                        </div>
+                    </article>
+ 
+                    <article class="svc-panel" role="tabpanel" id="svc-panel-4" aria-labelledby="svc-tab-4">
+                        <div class="svc-img"><div class="svc-bg svc-i4"></div><span class="svc-chip">7 piscinas</span></div>
+                        <div class="svc-body">
+                            <h3>7 piscinas exteriores</h3>
+                            <p>Siete piscinas al aire libre para todos los gustos: zonas para nadar, para relajarse al sol y espacios pensados para las familias, con piscina infantil y una playa de arena artificial.</p>
+                            <ul class="svc-details">
+                                <li>Piscina infantil</li>
+                                <li>Playa de arena artificial</li>
+                                <li>Solárium para tomar el sol</li>
+                            </ul>
+                        </div>
+                    </article>
+ 
+                    <article class="svc-panel" role="tabpanel" id="svc-panel-5" aria-labelledby="svc-tab-5">
+                        <div class="svc-img"><div class="svc-bg svc-i5"></div><span class="svc-chip">Vistas</span></div>
+                        <div class="svc-body">
+                            <h3>Terrazas</h3>
+                            <p>Desayuna, toma algo o simplemente contempla el Atlántico desde nuestras terrazas. Un rincón tranquilo para cualquier momento del día, rodeado de jardines y palmeras.</p>
+                            <ul class="svc-details">
+                                <li>Vistas al océano Atlántico</li>
+                                <li>Rodeadas de jardines</li>
+                                <li>Perfectas para el desayuno y el atardecer</li>
+                            </ul>
+                        </div>
+                    </article>
+ 
+                    <article class="svc-panel" role="tabpanel" id="svc-panel-6" aria-labelledby="svc-tab-6">
+                        <div class="svc-img"><div class="svc-bg svc-i6"></div><span class="svc-chip">En movimiento</span></div>
+                        <div class="svc-body">
+                            <h3>Actividades y deportes</h3>
+                            <p>Si prefieres no parar, el hotel organiza actividades y deportes para todas las edades. Una forma divertida de conocer a otros viajeros y pasar el día activo.</p>
+                            <ul class="svc-details">
+                                <li>Actividades para toda la familia</li>
+                                <li>Deportes al aire libre</li>
+                                <li>Opciones para todas las edades</li>
+                            </ul>
+                        </div>
+                    </article>
+ 
+                    <article class="svc-panel" role="tabpanel" id="svc-panel-7" aria-labelledby="svc-tab-7">
+                        <div class="svc-img"><div class="svc-bg svc-i7"></div><span class="svc-chip">En familia</span></div>
+                        <div class="svc-body">
+                            <h3>Servicio para niños</h3>
+                            <p>Los más pequeños también tienen su sitio. Contamos con servicios y espacios pensados para ellos, para que los padres descansen y los niños se lo pasen en grande.</p>
+                            <ul class="svc-details">
+                                <li>Espacios y actividades infantiles</li>
+                                <li>Piscina infantil</li>
+                                <li>Pensado para que toda la familia disfrute</li>
+                            </ul>
+                        </div>
+                    </article>
+ 
+                </div>
+            </div>
+        </section>
+ 
+        <!-- ▼ RESUMEN RÁPIDO ▼ -->
+        <section class="section">
+            <header class="section-head">
+                <h2>De un vistazo</h2>
+                <p>Lo esencial de tu estancia, en pocas palabras.</p>
+            </header>
             <ul class="services services-light">
-                <li><h3>Desayuno en la terraza</h3><p>Todos los días de 7:30 a 11:00.</p></li>
-                <li><h3>Piscina y solárium</h3><p>Abierta de 9:00 a 20:00.</p></li>
-                <li><h3>Spa</h3><p>Masajes y circuito de aguas, con cita previa.</p></li>
-                <li><h3>Traslado al aeropuerto</h3><p>Bajo petición, con 24 horas de antelación.</p></li>
+                <li><h3>Llegada fácil</h3><p>Parking gratuito para los huéspedes.</p></li>
+                <li><h3>Agua por todas partes</h3><p>Siete piscinas exteriores y el Aqua Princess Spa.</p></li>
+                <li><h3>Siempre en forma</h3><p>Gimnasio, actividades y deportes.</p></li>
+                <li><h3>Para toda la familia</h3><p>Servicio para niños y terrazas para descansar.</p></li>
             </ul>
         </section>
+ 
+        <section class="section section-sand cta">
+            <h2>¿Te apetece probarlo?</h2>
+            <p>Elige tus fechas y reserva tu habitación. Te respondemos en menos de 24 horas.</p>
+            <a href="reservas.html" class="btn">Reservar ahora</a>
+        </section>
 	</main>
-
+ 
 	<footer id="footer">
         <div class="footer-cta">
             <h2>¿Preparas tu escapada?</h2>
             <a href="reservas.html" class="btn">Reservar una habitación</a>
         </div>
-
+ 
         <div class="footer-grid">
             <div class="footer-col footer-brand">
                 <a href="index.html" class="logo">Hotel Princess La Palma</a>
@@ -87,7 +219,7 @@
                     <p id="nl-status" role="status" aria-live="polite"></p>
                 </form>
             </div>
-
+ 
             <div class="footer-col">
                 <h3>Contacto</h3>
                 <ul>
@@ -98,7 +230,7 @@
 					<li><a href="https://wa.me/34613489055" target="_blank" rel="noopener">WhatsApp: 613 48 90 55</a></li>
                 </ul>
             </div>
-
+ 
             <div class="footer-col">
                 <h3>Explora</h3>
                 <ul>
@@ -108,7 +240,7 @@
                     <li><a href="reservas.html">Reservas</a></li>
                 </ul>
             </div>
-
+ 
             <div class="footer-col">
                 <h3>Síguenos</h3>
                 <ul class="social">
@@ -120,7 +252,7 @@
                 </ul>
             </div>
         </div>
-
+ 
         <div class="footer-bottom">
             <p>&copy; <span id="year">2026</span> Hotel Princess La Palma</p>
             <ul>
@@ -130,7 +262,7 @@
             </ul>
         </div>
     </footer>
-
+ 
 	<div class="cookie-banner" id="cookie-banner" role="dialog" aria-labelledby="cookie-title" hidden>
         <div class="cookie-main">
             <h2 id="cookie-title">Cookies</h2>
@@ -147,11 +279,11 @@
             <button type="button" class="btn btn-small" id="cookie-accept">Aceptar todas</button>
         </div>
     </div>
-
+ 
     <div class="modal" id="user-modal" hidden>
         <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="user-title">
             <button type="button" class="modal-close" id="user-close" aria-label="Cerrar">×</button>
-
+ 
             <div id="user-form-view">
                 <h2 id="user-title">Crea tu cuenta</h2>
                 <p class="modal-sub">Regístrate para guardar tus datos en tus próximas reservas.</p>
@@ -165,7 +297,7 @@
                     <button type="submit" class="btn">Registrarme</button>
                 </form>
             </div>
-
+ 
             <div id="user-logged-view" hidden>
                 <h2>Sesión iniciada</h2>
                 <p class="modal-sub" id="user-logged-text"></p>
@@ -173,7 +305,7 @@
             </div>
         </div>
     </div>
-
+ 
 	<!-- ═══════════════════ MÚSICA DE FONDO ═══════════════════ -->
 	<audio id="bg-music" loop preload="none">
 		<source src="musica.mp3" type="audio/mpeg">
@@ -184,5 +316,8 @@
 	</button>
 	
 	<script src="script.js"></script>
+</body>
+</html>
+ script src="script.js"></script>
 </body>
 </html>
