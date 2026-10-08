@@ -594,3 +594,82 @@ input.invalid { border-color: #b3261e; }
 	.booking-layout { grid-template-columns: 1fr; }
 	.summary { position: static; }
 }
+
+/* ---------- Servicios ---------- */
+.svc-intro { max-width: 70ch; }
+
+.svc-explorer {
+	display: grid; grid-template-columns: minmax(230px, 300px) minmax(0, 1fr);
+	gap: 2rem; align-items: start; max-width: 1100px; margin-inline: auto;
+}
+
+.svc-tabs { display: flex; flex-direction: column; gap: .5rem; }
+.svc-tab {
+	position: relative; overflow: hidden;
+	display: flex; align-items: center; gap: .8rem; width: 100%;
+	padding: .9em 1.1em; border: 2px solid transparent; border-radius: 8px;
+	background: var(--white); color: var(--ink); text-align: left;
+	font: 700 1rem var(--sans); cursor: pointer;
+	transition: background .25s, color .25s, transform .25s, border-color .25s;
+}
+.svc-tab .ico { font-size: 1.3rem; line-height: 1; }
+.svc-tab[aria-selected="true"] {
+	background: var(--ink); color: var(--white); border-color: var(--sun); transform: translateX(6px);
+}
+@media (hover: hover) {
+	.svc-tab:hover:not([aria-selected="true"]) { background: var(--foam); transform: translateX(4px); }
+}
+
+.svc-tab::after {
+	content: ""; position: absolute; left: 0; bottom: 0; height: 3px; width: 0; background: var(--sun);
+}
+.svc-explorer.auto .svc-tab[aria-selected="true"]::after { animation: svc-progress 7s linear forwards; }
+.svc-explorer:hover .svc-tab::after { animation-play-state: paused; }
+@keyframes svc-progress { from { width: 0; } to { width: 100%; } }
+
+.svc-panels { display: grid; }
+.svc-panel {
+	grid-area: 1 / 1; overflow: hidden; border-radius: 10px;
+	background: var(--white); box-shadow: 0 6px 20px rgba(0, 0, 0, .12);
+	opacity: 0; visibility: hidden;
+	transition: opacity .6s ease, visibility .6s ease;
+}
+.svc-panel.active { opacity: 1; visibility: visible; }
+
+.svc-img { position: relative; aspect-ratio: 16 / 9; overflow: hidden; }
+.svc-bg { position: absolute; inset: 0; transform: scale(1); }
+.svc-panel.active .svc-bg { animation: svc-zoom 9s ease-out both; }
+@keyframes svc-zoom { from { transform: scale(1); } to { transform: scale(1.12); } }
+
+.svc-chip {
+	position: absolute; left: 1rem; bottom: 1rem; padding: .3em .9em; border-radius: 999px;
+	background: var(--sun); color: var(--ink); font: 700 .85rem var(--sans);
+}
+
+/* FOTOS (cambia los nombres si los tuyos son distintos) */
+.svc-i1 { background: url("fotos/parking.jpg") center/cover; }
+.svc-i2 { background: url("fotos/gym.jpg") center/cover; }
+.svc-i3 { background: url("fotos/Spa.jpg") center/cover; }
+.svc-i4 { background: url("fotos/piscina.jpg") center/cover; }
+.svc-i5 { background: url("fotos/hamacas.jpg") center/cover; }
+.svc-i6 { background: url("fotos/deportes.jpg") center/cover; }
+.svc-i7 { background: url("fotos/niños.jpg") center/cover; }
+
+.svc-body { padding: 1.6rem 1.8rem 1.8rem; }
+.svc-body h3 { font-size: 1.6rem; }
+.svc-body p { max-width: none; }
+.svc-details { list-style: none; margin: 1rem 0 0; padding: 0; display: grid; gap: .4rem; }
+.svc-details li { position: relative; padding-left: 1.6rem; }
+.svc-details li::before { content: "✓"; position: absolute; left: 0; color: var(--sea); font-weight: 700; }
+
+@media (max-width: 800px) {
+	.svc-explorer { grid-template-columns: 1fr; gap: 1.2rem; }
+	.svc-tabs { flex-direction: row; overflow-x: auto; padding-bottom: .4rem; }
+	.svc-tab { width: auto; flex: none; white-space: nowrap; }
+	.svc-tab[aria-selected="true"] { transform: none; }
+	.svc-body { padding: 1.2rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.svc-panel.active .svc-bg, .svc-explorer.auto .svc-tab[aria-selected="true"]::after { animation: none; }
+}
