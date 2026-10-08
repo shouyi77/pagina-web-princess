@@ -517,6 +517,19 @@ input.invalid { border-color: #b3261e; }
 .weather-temp { font: 600 3rem/1.1 var(--serif); }
 .weather-desc { font-size: 1.05rem; }
 .weather-extra { margin-top: .4rem; font-size: .9rem; opacity: .85; }
+.weather-link {
+	display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+	align-self: center; margin-top: 1rem; padding: .55em 1.1em;
+	border: 2px solid var(--sun); border-radius: 999px;
+	background: transparent; color: var(--white);
+	font: 700 .9rem var(--sans); text-decoration: none;
+	transition: background .2s, color .2s, transform .2s;
+}
+.weather-link svg { width: 16px; height: 16px; flex: none; }
+@media (hover: hover) {
+	.weather-link:hover { background: var(--sun); color: var(--ink); transform: translateY(-2px); }
+}
+.weather-link:focus-visible { outline-color: var(--white); }
 
 @media (max-width: 800px) {
 	.location-grid { grid-template-columns: 1fr; }
