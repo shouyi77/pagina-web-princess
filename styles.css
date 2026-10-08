@@ -159,7 +159,7 @@ input.invalid { border-color: #b3261e; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-	html { scroll-behavior: auto; }
+	html { scroll-behavior: smooth; }
 	* { transition: none !important; }
 }
 
@@ -773,6 +773,8 @@ input.invalid { border-color: #b3261e; }
 	border: 1px solid rgba(0, 0, 0, 0.08);
 	border-radius: 12px;
 	box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+	text-decoration: none;
+    color: inherit;
 }
 
 .feat-icon {
@@ -921,4 +923,8 @@ a.weather:hover {
 	.services-features {
 		grid-template-columns: 1fr;
 	}
+}
+
+#galeria {
+    scroll-margin-top: 100px;
 }
