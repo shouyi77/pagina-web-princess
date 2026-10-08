@@ -830,3 +830,90 @@ if (quickbar) {
 	quickbar.addEventListener('input', saveQuickbarState);
 	quickbar.addEventListener('change', saveQuickbarState);
 }
+/* ---- Widget del Chatbot con Gemini ---- */
+    const chatBtn = document.createElement('button');
+    chatBtn.type = 'button';
+    chatBtn.className = 'chatbot-floating-btn';
+    chatBtn.textContent = '💬 Asistente';
+    document.body.appendChild(chatBtn);
+
+    const chatBox = document.createElement('div');
+    chatBox.className = 'chatbot-box';
+    chatBox.hidden = true;
+    chatBox.innerHTML = `
+        <div class="chatbot-header">
+            <h4>Asistente La Palma Princess</h4>
+            <button type="button" id="chatbot-close-btn">&times;</button>
+        </div>
+        <div id="chatbot-messages" class="chatbot-messages-area">
+            <div class="msg-bot">¡Hola! Soy el recepcionista virtual del hotel La Palma Princess. ¿En qué te puedo ayudar hoy?</div>
+        </div>
+        <div class="chatbot-input-area">
+            <input type="text" id="chatbot-input" placeholder="Escribe tu pregunta...">
+            <button type="button" id="chatbot-send-btn" class="btn btn-small">Enviar</button>
+        </div>
+    `;
+    document.body.appendChild(chatBox);
+
+    chatBtn.addEventListener('click', function () {
+        chatBox.hidden = !chatBox.hidden;
+        if (!chatBox.hidden) {
+            const inputField = document.getElementById('chatbot-input');
+            if (inputField) inputField.focus();
+        }
+    });
+
+    const closeChatBtn = document.getElementById('chatbot-close-btn');
+    if (closeChatBtn) {
+        closeChatBtn.addEventListener('click', function () {
+            chatBox.hidden = true;
+        });
+    }
+
+    const sendMsg = function () {
+        const input = document.getElementById('chatbot-input');
+        const msgArea = document.getElementById('chatbot-messages');
+        if (!input || !msgArea) return;
+
+        const text = input.value.trim();
+        if (!text) return;
+
+        const userDiv = document.createElement('div');
+        userDiv.className = 'msg-user';
+        userDiv.textContent = text;
+        msgArea.appendChild(userDiv);
+        input.value = '';
+        msgArea.scrollTop = msgArea.scrollHeight;
+
+        fetch('http://127.0.0.1:5000/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mensaje: text })
+        })
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+            const botDiv = document.createElement('div');
+            botDiv.className = 'msg-bot';
+            botDiv.textContent = data.respuesta || 'Lo siento, ha ocurrido un error.';
+            msgArea.appendChild(botDiv);
+            msgArea.scrollTop = msgArea.scrollHeight;
+        })
+        .catch(function (err) {
+            console.error('Error en el chat:', err);
+            const errDiv = document.createElement('div');
+            errDiv.className = 'msg-bot';
+            errDiv.textContent = 'Error de conexión con el servidor.';
+            msgArea.appendChild(errDiv);
+            msgArea.scrollTop = msgArea.scrollHeight;
+        });
+    };
+
+    const sendBtn = document.getElementById('chatbot-send-btn');
+    const chatInput = document.getElementById('chatbot-input');
+
+    if (sendBtn) sendBtn.addEventListener('click', sendMsg);
+    if (chatInput) {
+        chatInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') sendMsg();
+        });
+    }
