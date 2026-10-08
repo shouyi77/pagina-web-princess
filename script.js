@@ -887,6 +887,7 @@ if (quickbar) {
 
         const text = input.value.trim();
         if (!text) return;
+        const lowerText = text.toLowerCase(); // <-- Guardamos el texto en minúsculas aquí antes de borrarlo
 
         const userDiv = document.createElement('div');
         userDiv.className = 'msg-user';
@@ -910,9 +911,24 @@ if (quickbar) {
         })
         .catch(function (err) {
             console.error('Error en el chat:', err);
+            
+            // PLAN B DE EMERGENCIA: Si el servidor está apagado o se abre en GitHub
+            let respuestaEmergencia = "¡Hola! En este momento estoy sin conexión al servidor local, pero puedes consultar las secciones de nuestra web o la información de reservas.";
+
+            // Sistema de palabras clave locales
+            if (lowerText.includes("piscina") || lowerText.includes("piscinas")) {
+                respuestaEmergencia = "En el hotel disponemos de un total de 11 piscinas:\n- Zona general (familiar): 7 piscinas exteriores (incluye infantil).\n- Esencia de La Palma (adultos +16): 4 piscinas, una climatizada en invierno.";
+            } else if (lowerText.includes("desayuno") || lowerText.includes("comer") || lowerText.includes("horario")) {
+                respuestaEmergencia = "El horario del desayuno en los restaurantes con bufé es de 07:00 a 12:00.";
+            } else if (lowerText.includes("parking") || lowerText.includes("aparcamiento") || lowerText.includes("coche")) {
+                respuestaEmergencia = "Sí, disponemos de parking gratuito para huéspedes durante toda la estancia.";
+            } else if (lowerText.includes("hola") || lowerText.includes("buenas")) {
+                respuestaEmergencia = "¡Hola! Bienvenido al Hotel Princess La Palma. ¿En qué te puedo ayudar hoy con tus vacaciones?";
+            }
+
             const errDiv = document.createElement('div');
             errDiv.className = 'msg-bot';
-            errDiv.textContent = 'Error de conexión con el servidor.';
+            errDiv.textContent = respuestaEmergencia;
             msgArea.appendChild(errDiv);
             msgArea.scrollTop = msgArea.scrollHeight;
         });
