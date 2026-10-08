@@ -269,7 +269,9 @@ input.invalid { border-color: #b3261e; }
 }
 
 /* Texto previo a la galería: empuja las fotos fuera de la pantalla inicial */
-.gallery-intro { min-height: 70vh; display: flex; flex-direction: column; justify-content: center; }
+.gallery-intro { min-height: 0; }
+.gallery-intro { padding-bottom: 3rem; }
+.gallery-intro + .section { padding-top: 3rem; }
 
 /* ---------- Pie de página ---------- */
 #footer { background: var(--ink); color: var(--foam); font-size: .95rem; }
