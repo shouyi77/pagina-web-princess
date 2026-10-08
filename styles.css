@@ -818,3 +818,105 @@ a.weather:hover {
 	filter: brightness(1.08);
 	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
+
+/* ---------- Sección Servicios (Estilo Galería) ---------- */
+.services-intro {
+	display: grid;
+	grid-template-columns: 1.2fr 1fr;
+	gap: 3rem;
+	align-items: center;
+	padding-top: 0.5rem !important;
+	padding-bottom: 0.5rem !important;
+	margin-top: 0 !important;
+	margin-bottom: 0 !important;
+}
+
+.services-intro-text .sub-tag {
+	display: inline-block;
+	font-size: 0.85rem;
+	text-transform: uppercase;
+	letter-spacing: 2px;
+	color: var(--sun, #c08b5c);
+	font-weight: 700;
+	margin-bottom: 0.75rem;
+}
+
+.services-intro-text h2 {
+	font-size: clamp(1.8rem, 3vw, 2.4rem);
+	margin-bottom: 1rem;
+}
+
+.services-intro-text p {
+	line-height: 1.6;
+	color: rgba(0, 0, 0, 0.75);
+}
+
+.services-intro-text .hint-text {
+	margin-top: 1.2rem;
+	font-size: 0.95rem;
+	background: rgba(0, 0, 0, 0.03);
+	padding: 0.75rem 1rem;
+	border-left: 3px solid var(--sun, #c08b5c);
+	border-radius: 0 6px 6px 0;
+}
+
+/* Grid de tarjetas clicables del lado derecho */
+.services-features {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 1rem;
+}
+
+.service-card-btn {
+	display: flex;
+	align-items: center;
+	gap: 0.85rem;
+	padding: 1.1rem;
+	background: #ffffff;
+	border: 1px solid rgba(0, 0, 0, 0.08);
+	border-radius: 12px;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+	text-decoration: none;
+	color: inherit;
+	transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.service-card-btn:hover {
+	transform: translateY(-4px);
+	box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+	border-color: var(--sun, #c08b5c);
+}
+
+.service-icon {
+	font-size: 1.8rem;
+	line-height: 1;
+}
+
+.service-info strong {
+	display: block;
+	font-size: 0.95rem;
+	color: var(--ink, #111);
+	transition: color 0.25s ease;
+}
+
+.service-card-btn:hover .service-info strong {
+	color: var(--sun, #c08b5c);
+}
+
+.service-info span {
+	font-size: 0.8rem;
+	color: #666;
+	display: block;
+	margin-top: 2px;
+}
+
+/* Adaptabilidad móvil */
+@media (max-width: 768px) {
+	.services-intro {
+		grid-template-columns: 1fr;
+		gap: 2rem;
+	}
+	.services-features {
+		grid-template-columns: 1fr;
+	}
+}
