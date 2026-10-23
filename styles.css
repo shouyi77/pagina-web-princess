@@ -963,3 +963,27 @@ a.weather:hover {
 	border-top: 1px solid var(--foam); background: var(--white);
 }
 .chatbot-input-area input { flex: 1; min-width: 0; height: 40px; padding: 0 .8em; }
+
+/* ---------- PWA ---------- */
+body { -webkit-tap-highlight-color: transparent; }
+
+.install-btn {
+	position: fixed; left: 1.2rem; bottom: 5rem; z-index: 35;
+	height: 44px; padding: 0 1.1rem; border: 0; border-radius: 999px;
+	background: var(--sun); color: var(--ink); font: 700 .95rem var(--sans);
+	cursor: pointer; box-shadow: 0 4px 14px rgba(0, 0, 0, .3);
+}
+.install-btn[hidden] { display: none; }
+@media (display-mode: standalone) { .install-btn { display: none; } }
+
+/* Zonas táctiles de al menos 44 px (móvil y iPad) */
+@media (pointer: coarse) {
+	.step { width: 44px; height: 44px; }
+	.menu-toggle, .btn-small { min-height: 44px; }
+	.remove-room { padding: .6em; }
+}
+
+/* En móvil, la barra de reservas deja de ocupar 276 px fijos en pantalla */
+@media (max-width: 700px) {
+	.quickbar { position: absolute; }
+}
