@@ -286,6 +286,51 @@
 		});
 	}
 
+	/* ---- Persistencia de datos de reserva en toda la web ----
+	   (CORREGIDO: antes estaba fuera de la función y no veía qbIn, qbOut ni $) */
+	const STORAGE_KEY = 'princess_booking_data';
+
+	function saveQuickbarState() {
+		if (!qbIn || !qbOut) return;
+		const data = {
+			checkin: qbIn.value,
+			checkout: qbOut.value,
+			adults: $('#qb-adults') ? $('#qb-adults').value : '2',
+			children: $('#qb-children') ? $('#qb-children').value : '0',
+			rooms: $('#qb-rooms') ? $('#qb-rooms').value : '1',
+			promo: $('input[name="promo"]') ? $('input[name="promo"]').value : '',
+			resident: $('input[name="resident"]') ? $('input[name="resident"]').checked : false
+		};
+		try {
+			sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+		} catch (e) {}
+	}
+
+	function loadQuickbarState() {
+		try {
+			const raw = sessionStorage.getItem(STORAGE_KEY);
+			if (!raw) return;
+			const data = JSON.parse(raw);
+
+			if (qbIn && data.checkin) qbIn.value = data.checkin;
+			if (qbOut && data.checkout) qbOut.value = data.checkout;
+			if (qbIn && qbOut) qbOut.min = addDays(qbIn.value, 1);
+
+			const promoInput = $('input[name="promo"]');
+			if (promoInput && data.promo) promoInput.value = data.promo;
+
+			const resInput = $('input[name="resident"]');
+			if (resInput && data.resident !== undefined) resInput.checked = data.resident;
+		} catch (e) {}
+	}
+
+	// Escuchar cambios en la quickbar para guardar automáticamente
+	if (quickbar) {
+		loadQuickbarState();
+		quickbar.addEventListener('input', saveQuickbarState);
+		quickbar.addEventListener('change', saveQuickbarState);
+	}
+
 	/* ---- Selector de huéspedes y habitaciones ---- */
 	const guestsBtn = $('#guests-btn');
 	if (guestsBtn) {
@@ -798,148 +843,210 @@
 	if (year) year.textContent = new Date().getFullYear();
 })();
 
-/* ---- Persistencia de datos de reserva en toda la web ---- */
-const STORAGE_KEY = 'princess_booking_data';
 
-function saveQuickbarState() {
-	if (!qbIn || !qbOut) return;
-	const data = {
-		checkin: qbIn.value,
-		checkout: qbOut.value,
-		adults: $('#qb-adults') ? $('#qb-adults').value : '2',
-		children: $('#qb-children') ? $('#qb-children').value : '0',
-		rooms: $('#qb-rooms') ? $('#qb-rooms').value : '1',
-		promo: $('input[name="promo"]') ? $('input[name="promo"]').value : '',
-		resident: $('input[name="resident"]') ? $('input[name="resident"]').checked : false
+/* =====================================================================
+   ASISTENTE VIRTUAL (Gemini en la nube + plan B con palabras clave)
+   ===================================================================== */
+(function () {
+	'use strict';
+
+	// ▼▼▼ PEGA AQUÍ LA URL DE RENDER (termina en /chat). Si no hay servidor, déjalo en '' ▼▼▼
+	const URL_RENDER = '';   // ejemplo: 'https://asistente-princess.onrender.com/chat'
+
+	const esLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+	const API_CHAT = esLocal ? 'http://127.0.0.1:5000/chat' : URL_RENDER;
+	const TIEMPO_MAX = 30000; // 30 s: Render gratuito puede tardar en "despertar"
+
+	// Plan B: solo usa datos reales del hotel (los mismos que CONTEXTO_HOTEL de servidor.py)
+	const BASE_LOCAL = [
+		{ claves: ['hola', 'buenas', 'buenos dias'], texto: '¡Hola! Bienvenido al Hotel Princess La Palma. ¿En qué te puedo ayudar?' },
+		{ claves: ['piscina'], texto: 'Tenemos 11 piscinas: 7 en la zona general (con piscina infantil y playa de arena artificial) y 4 en Esencia de La Palma (solo adultos +16), una de ellas climatizada en invierno.' },
+		{ claves: ['spa', 'masaje', 'tratamiento'], texto: 'El Aqua Princess Spa ofrece circuito de aguas, masajes y tratamientos. Conviene reservar con antelación.' },
+		{ claves: ['parking', 'aparcamiento', 'aparcar', 'coche'], texto: 'Sí, el parking es gratuito para huéspedes durante toda la estancia.' },
+		{ claves: ['gimnasio', 'gym'], texto: 'Hay gimnasio con equipamiento de cardio y musculación, para huéspedes.' },
+		{ claves: ['restaurante', 'bufe', 'comer', 'cenar', 'bar'], texto: 'Contamos con restaurantes con bufé, bar piscina, piano bar y un restaurante con menú de degustación.' },
+		{ claves: ['adultos', 'esencia'], texto: 'Esencia de La Palma es la zona exclusiva para mayores de 16 años, con cuatro piscinas.' },
+		{ claves: ['nino', 'ninos', 'infantil', 'familia'], texto: 'Tenemos piscina infantil, espacios y actividades para niños, y habitaciones familiares.' },
+		{ claves: ['habitacion', 'suite', 'estandar', 'familiar'], texto: 'Tenemos Estándar (22 m²), Familiar Superior (44 m², dos habitaciones comunicadas) y Ocean Suite (44 m², salón y dormitorio). Mira la sección Habitaciones.' },
+		{ claves: ['reserva', 'reservar', 'precio', 'tarifa', 'cuesta'], texto: 'Puedes reservar en la sección Reservas; respondemos por email en menos de 24 horas. Los precios se consultan al reservar.' },
+		{ claves: ['telefono', 'llamar', 'whatsapp', 'email', 'contacto'], texto: 'Teléfono: +34 922 42 55 11 (lunes a viernes, 09:00-17:00). WhatsApp: 613 48 90 55. Email: hotelPrincessLaPalma@gmail.com.' },
+		{ claves: ['donde', 'direccion', 'llegar', 'ubicacion'], texto: 'Estamos en Carretera de la Costa, Cerca Vieja, 10, 38749 Fuencaliente de La Palma.' }
+	];
+
+	function respuestaLocal(texto) {
+		const t = texto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+		const hit = BASE_LOCAL.find(function (r) {
+			return r.claves.some(function (c) { return t.includes(c); });
+		});
+		const aviso = navigator.onLine ? '' : '(Sin conexión) ';
+		return aviso + (hit ? hit.texto : 'No tengo ese dato ahora mismo. Escríbenos por WhatsApp al 613 48 90 55 o llámanos al +34 922 42 55 11.');
+	}
+
+	// Convierte **negrita** y las listas con guiones que devuelve Gemini (escapando el HTML)
+	function formatear(texto) {
+		return texto
+			.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+			.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+			.replace(/^\s*[-*] /gm, '• ');
+}
+
+
+	/* ---- Interfaz del chat ---- */
+	const chatBtn = document.createElement('button');
+	chatBtn.type = 'button';
+	chatBtn.className = 'chatbot-floating-btn';
+	chatBtn.textContent = '💬 Asistente';
+	document.body.appendChild(chatBtn);
+
+	const chatBox = document.createElement('div');
+	chatBox.className = 'chatbot-box';
+	chatBox.hidden = true;
+	chatBox.innerHTML =
+		'<div class="chatbot-header">' +
+			'<h4>Asistente La Palma Princess</h4>' +
+			'<button type="button" id="chatbot-close-btn" aria-label="Cerrar">&times;</button>' +
+		'</div>' +
+		'<div id="chatbot-messages" class="chatbot-messages-area">' +
+			'<div class="msg-bot">¡Hola! Soy el recepcionista virtual del hotel La Palma Princess. ¿En qué te puedo ayudar hoy?</div>' +
+		'</div>' +
+		'<div class="chatbot-input-area">' +
+			'<input type="text" id="chatbot-input" placeholder="Escribe tu pregunta...">' +
+			'<button type="button" id="chatbot-send-btn" class="btn btn-small">Enviar</button>' +
+		'</div>';
+	document.body.appendChild(chatBox);
+
+	chatBtn.addEventListener('click', function () {
+		chatBox.hidden = !chatBox.hidden;
+		if (!chatBox.hidden) {
+			const inputField = document.getElementById('chatbot-input');
+			if (inputField) inputField.focus();
+		}
+	});
+
+	const closeChatBtn = document.getElementById('chatbot-close-btn');
+	if (closeChatBtn) {
+		closeChatBtn.addEventListener('click', function () { chatBox.hidden = true; });
+	}
+
+	function nuevoMensaje(area, clase, texto) {
+		const div = document.createElement('div');
+		div.className = clase;
+		div.textContent = texto;
+		area.appendChild(div);
+		area.scrollTop = area.scrollHeight;
+		return div;
+	}
+
+	// Pide la respuesta a la IA (con límite de tiempo); si algo falla, se rechaza la promesa
+	function preguntarIA(texto) {
+		if (!API_CHAT) return Promise.reject(new Error('sin servidor'));
+		const control = new AbortController();
+		const temporizador = setTimeout(function () { control.abort(); }, TIEMPO_MAX);
+		return fetch(API_CHAT, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ mensaje: texto }),
+			signal: control.signal
+		})
+			.then(function (res) {
+				clearTimeout(temporizador);
+				if (!res.ok) throw new Error('HTTP ' + res.status);
+				return res.json();
+			})
+			.then(function (data) {
+				if (!data.respuesta) throw new Error('respuesta vacía');
+				return data.respuesta;
+			})
+			.catch(function (err) {
+				clearTimeout(temporizador);
+				throw err;
+			});
+	}
+
+	const sendMsg = function () {
+		const input = document.getElementById('chatbot-input');
+		const msgArea = document.getElementById('chatbot-messages');
+		if (!input || !msgArea) return;
+
+		const text = input.value.trim();
+		if (!text) return;
+
+		nuevoMensaje(msgArea, 'msg-user', text);
+		input.value = '';
+
+		const escribiendo = nuevoMensaje(msgArea, 'msg-bot', 'Escribiendo…');
+
+		preguntarIA(text)
+			.then(function (respuesta) {
+				escribiendo.innerHTML = formatear(respuesta);
+			})
+			.catch(function (err) {
+				console.warn('Asistente en modo local:', err.message);
+				escribiendo.textContent = respuestaLocal(text);
+			})
+			.then(function () { msgArea.scrollTop = msgArea.scrollHeight; });
 	};
-	try {
-		sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-	} catch (e) {}
-}
 
-function loadQuickbarState() {
-	try {
-		const raw = sessionStorage.getItem(STORAGE_KEY);
-		if (!raw) return;
-		const data = JSON.parse(raw);
+	const sendBtn = document.getElementById('chatbot-send-btn');
+	const chatInput = document.getElementById('chatbot-input');
 
-		if (qbIn && data.checkin) qbIn.value = data.checkin;
-		if (qbOut && data.checkout) qbOut.value = data.checkout;
-		
-		const promoInput = $('input[name="promo"]');
-		if (promoInput && data.promo) promoInput.value = data.promo;
+	if (sendBtn) sendBtn.addEventListener('click', sendMsg);
+	if (chatInput) {
+		chatInput.addEventListener('keydown', function (e) {
+			if (e.key === 'Enter') sendMsg();
+		});
+	}
+})();
 
-		const resInput = $('input[name="resident"]');
-		if (resInput && data.resident !== undefined) resInput.checked = data.resident;
-	} catch (e) {}
-}
 
-// Escuchar cambios en la quickbar para guardar automáticamente
-if (quickbar) {
-	loadQuickbarState();
-	quickbar.addEventListener('input', saveQuickbarState);
-	quickbar.addEventListener('change', saveQuickbarState);
-}
-/* ---- Widget del Chatbot con Gemini ---- */
-    const chatBtn = document.createElement('button');
-    chatBtn.type = 'button';
-    chatBtn.className = 'chatbot-floating-btn';
-    chatBtn.textContent = '💬 Asistente';
-    document.body.appendChild(chatBtn);
+/* =====================================================================
+   PWA: service worker y botón "Instalar app"
+   ===================================================================== */
+(function () {
+	'use strict';
 
-    const chatBox = document.createElement('div');
-    chatBox.className = 'chatbot-box';
-    chatBox.hidden = true;
-    chatBox.innerHTML = `
-        <div class="chatbot-header">
-            <h4>Asistente La Palma Princess</h4>
-            <button type="button" id="chatbot-close-btn">&times;</button>
-        </div>
-        <div id="chatbot-messages" class="chatbot-messages-area">
-            <div class="msg-bot">¡Hola! Soy el recepcionista virtual del hotel La Palma Princess. ¿En qué te puedo ayudar hoy?</div>
-        </div>
-        <div class="chatbot-input-area">
-            <input type="text" id="chatbot-input" placeholder="Escribe tu pregunta...">
-            <button type="button" id="chatbot-send-btn" class="btn btn-small">Enviar</button>
-        </div>
-    `;
-    document.body.appendChild(chatBox);
+	if ('serviceWorker' in navigator) {
+		window.addEventListener('load', function () {
+			navigator.serviceWorker.register('sw.js').catch(function (e) { console.error('SW:', e); });
+		});
+	}
 
-    chatBtn.addEventListener('click', function () {
-        chatBox.hidden = !chatBox.hidden;
-        if (!chatBox.hidden) {
-            const inputField = document.getElementById('chatbot-input');
-            if (inputField) inputField.focus();
-        }
-    });
+	const yaInstalada = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+	if (yaInstalada) return;
 
-    const closeChatBtn = document.getElementById('chatbot-close-btn');
-    if (closeChatBtn) {
-        closeChatBtn.addEventListener('click', function () {
-            chatBox.hidden = true;
-        });
-    }
+	const btn = document.createElement('button');
+	btn.type = 'button';
+	btn.className = 'install-btn';
+	btn.textContent = '📲 Instalar app';
+	btn.hidden = true;
+	document.body.appendChild(btn);
 
-    const sendMsg = function () {
-        const input = document.getElementById('chatbot-input');
-        const msgArea = document.getElementById('chatbot-messages');
-        if (!input || !msgArea) return;
+	let promptInstalar = null;
+	window.addEventListener('beforeinstallprompt', function (e) {
+		e.preventDefault();
+		promptInstalar = e;
+		btn.hidden = false;
+	});
 
-        const text = input.value.trim();
-        if (!text) return;
-        const lowerText = text.toLowerCase(); // <-- Guardamos el texto en minúsculas aquí antes de borrarlo
+	// iPhone/iPad no tienen instalación automática: se muestra la guía manual
+	const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+		(navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+	if (esIOS) btn.hidden = false;
 
-        const userDiv = document.createElement('div');
-        userDiv.className = 'msg-user';
-        userDiv.textContent = text;
-        msgArea.appendChild(userDiv);
-        input.value = '';
-        msgArea.scrollTop = msgArea.scrollHeight;
+	btn.addEventListener('click', async function () {
+		if (promptInstalar) {
+			promptInstalar.prompt();
+			await promptInstalar.userChoice;
+			promptInstalar = null;
+			btn.hidden = true;
+		} else {
+			alert('Para instalar la app: pulsa Compartir y elige "Añadir a pantalla de inicio".');
+		}
+	});
 
-        fetch('http://127.0.0.1:5000/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ mensaje: text })
-        })
-        .then(function (res) { return res.json(); })
-        .then(function (data) {
-            const botDiv = document.createElement('div');
-            botDiv.className = 'msg-bot';
-            botDiv.textContent = data.respuesta || 'Lo siento, ha ocurrido un error.';
-            msgArea.appendChild(botDiv);
-            msgArea.scrollTop = msgArea.scrollHeight;
-        })
-        .catch(function (err) {
-            console.error('Error en el chat:', err);
-            
-            // PLAN B DE EMERGENCIA: Si el servidor está apagado o se abre en GitHub
-            let respuestaEmergencia = "¡Hola! En este momento estoy sin conexión al servidor local, pero puedes consultar las secciones de nuestra web o la información de reservas.";
-
-            // Sistema de palabras clave locales
-            if (lowerText.includes("piscina") || lowerText.includes("piscinas")) {
-                respuestaEmergencia = "En el hotel disponemos de un total de 11 piscinas:\n- Zona general (familiar): 7 piscinas exteriores (incluye infantil).\n- Esencia de La Palma (adultos +16): 4 piscinas, una climatizada en invierno.";
-            } else if (lowerText.includes("desayuno") || lowerText.includes("comer") || lowerText.includes("horario")) {
-                respuestaEmergencia = "El horario del desayuno en los restaurantes con bufé es de 07:00 a 12:00.";
-            } else if (lowerText.includes("parking") || lowerText.includes("aparcamiento") || lowerText.includes("coche")) {
-                respuestaEmergencia = "Sí, disponemos de parking gratuito para huéspedes durante toda la estancia.";
-            } else if (lowerText.includes("hola") || lowerText.includes("buenas")) {
-                respuestaEmergencia = "¡Hola! Bienvenido al Hotel Princess La Palma. ¿En qué te puedo ayudar hoy con tus vacaciones?";
-            }
-
-            const errDiv = document.createElement('div');
-            errDiv.className = 'msg-bot';
-            errDiv.textContent = respuestaEmergencia;
-            msgArea.appendChild(errDiv);
-            msgArea.scrollTop = msgArea.scrollHeight;
-        });
-    };
-
-    const sendBtn = document.getElementById('chatbot-send-btn');
-    const chatInput = document.getElementById('chatbot-input');
-
-    if (sendBtn) sendBtn.addEventListener('click', sendMsg);
-    if (chatInput) {
-        chatInput.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter') sendMsg();
-        });
-    }
+	// Evento clave para marketing: cuenta cada instalación real
+	window.addEventListener('appinstalled', function () {
+		btn.hidden = true;
+		console.log('App instalada'); // aquí iría el envío a Google Analytics / Firebase
+	});
+})();
