@@ -851,7 +851,7 @@
 	'use strict';
 
 	// ▼▼▼ PEGA AQUÍ LA URL DE RENDER (termina en /chat). Si no hay servidor, déjalo en '' ▼▼▼
-	const URL_RENDER = 'https://asistente-princess.onrender.com';   // ejemplo: 'https://asistente-princess.onrender.com/chat'
+	const URL_RENDER = 'https://asistente-princess.onrender.com/chat';   // ejemplo: 'https://asistente-princess.onrender.com/chat'
 
 	const esLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 	const API_CHAT = esLocal ? 'http://127.0.0.1:5000/chat' : URL_RENDER;
