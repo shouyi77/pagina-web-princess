@@ -938,6 +938,7 @@
 	}
 
 	// Pide la respuesta a la IA (con límite de tiempo); si algo falla, se rechaza la promesa
+// Pide la respuesta a la IA (con límite de tiempo); si algo falla, se rechaza la promesa
 	function preguntarIA(texto) {
 		if (!API_CHAT) return Promise.reject(new Error('sin servidor'));
 		const control = new AbortController();
