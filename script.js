@@ -1361,11 +1361,15 @@ const API_BASE = window.PRINCESS_API_BASE ||
 	const yaInstalada = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
 	if (yaInstalada) return;
 
+	const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+		(navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+	const esAndroid = /android/i.test(navigator.userAgent);
 	const btn = document.createElement('button');
 	btn.type = 'button';
 	btn.className = 'install-btn';
-	btn.textContent = '📲 Instalar app';
-	btn.hidden = true;
+	btn.textContent = window.siteText('Instalar app');
+	btn.setAttribute('aria-haspopup', 'dialog');
+	btn.hidden = !esIOS && !esAndroid;
 	document.body.appendChild(btn);
 
 	let promptInstalar = null;
@@ -1375,25 +1379,69 @@ const API_BASE = window.PRINCESS_API_BASE ||
 		btn.hidden = false;
 	});
 
-	// iPhone/iPad no tienen instalación automática: se muestra la guía manual
-	const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) ||
-		(navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-	if (esIOS) btn.hidden = false;
+	const guide = document.createElement('dialog');
+	guide.className = 'install-dialog';
+	guide.id = 'install-guide';
+	guide.setAttribute('aria-labelledby', 'install-dialog-title');
+	btn.setAttribute('aria-controls', guide.id);
+	const guideTitle = document.createElement('h2');
+	guideTitle.id = 'install-dialog-title';
+	guideTitle.textContent = window.siteText('Instala La Palma Princess');
+	const guideIntro = document.createElement('p');
+	guideIntro.textContent = window.siteText('Agrega esta app a tu pantalla de inicio para abrirla rápidamente.');
+	const guideSteps = document.createElement('ol');
+	const steps = esIOS
+		? [
+			'Abre esta página en Safari.',
+			'Pulsa Compartir y selecciona «Añadir a pantalla de inicio».',
+			'Confirma con «Añadir». Después, abre la app desde tu pantalla de inicio.'
+		]
+		: esAndroid
+			? [
+				'Abre el menú del navegador (⋮) y elige «Instalar app» o «Añadir a pantalla de inicio».',
+				'Confirma la instalación y abre la app desde tu pantalla de inicio.'
+			]
+			: ['Usa la opción «Instalar» o «Añadir a pantalla de inicio» del menú del navegador.'];
+	steps.forEach(function (step) {
+		const item = document.createElement('li');
+		item.textContent = window.siteText(step);
+		guideSteps.appendChild(item);
+	});
+	const closeGuide = document.createElement('button');
+	closeGuide.type = 'button';
+	closeGuide.className = 'install-dialog-close';
+	closeGuide.textContent = window.siteText('Cerrar');
+	guide.append(guideTitle, guideIntro, guideSteps, closeGuide);
+	document.body.appendChild(guide);
+
+	function showInstallGuide() {
+		if (!guide.open) guide.showModal();
+		closeGuide.focus();
+	}
+
+	closeGuide.addEventListener('click', function () { guide.close(); });
+	guide.addEventListener('click', function (event) {
+		if (event.target === guide) guide.close();
+	});
 
 	btn.addEventListener('click', async function () {
 		if (promptInstalar) {
-			promptInstalar.prompt();
-			await promptInstalar.userChoice;
-			promptInstalar = null;
-			btn.hidden = true;
-		} else {
-			alert('Para instalar la app: pulsa Compartir y elige "Añadir a pantalla de inicio".');
+			try {
+				const installPrompt = promptInstalar;
+				promptInstalar = null;
+				await installPrompt.prompt();
+				const choice = await installPrompt.userChoice;
+				if (choice.outcome === 'accepted') btn.hidden = true;
+			} catch (error) {
+				console.warn('No se pudo mostrar la instalación nativa.', error);
+				showInstallGuide();
+			}
+			return;
 		}
+		showInstallGuide();
 	});
 
-	// Evento clave para marketing: cuenta cada instalación real
 	window.addEventListener('appinstalled', function () {
 		btn.hidden = true;
-		console.log('App instalada'); // aquí iría el envío a Google Analytics / Firebase
 	});
 })();

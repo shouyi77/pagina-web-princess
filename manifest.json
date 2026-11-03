@@ -3,9 +3,14 @@
   "short_name": "Princess",
   "description": "Reservas, servicios y asistente virtual del hotel La Palma Princess (Fuencaliente, La Palma)",
   "lang": "es",
+  "id": "./",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
   "orientation": "any",
   "background_color": "#ffffff",
   "theme_color": "#12303a",

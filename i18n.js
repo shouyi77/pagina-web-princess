@@ -333,7 +333,16 @@
 		'El formulario todavía no se ha enviado.': ['The form has not been submitted yet.', 'Das Formular wurde noch nicht übermittelt.'],
 		'Revisa el nombre, el email y las fechas de la reserva.': ['Check your name, email and booking dates.', 'Bitte überprüfen Sie Name, E-Mail und Buchungsdaten.'],
 		'No hay disponibilidad para esas fechas.': ['No availability for these dates.', 'Für diese Daten ist nichts verfügbar.'],
-		'Elige una fecha primero': ['Choose a date first', 'Wählen Sie zuerst ein Datum']
+		'Elige una fecha primero': ['Choose a date first', 'Wählen Sie zuerst ein Datum'],
+		'Instalar app': ['Install app', 'App installieren'],
+		'Instala La Palma Princess': ['Install La Palma Princess', 'La Palma Princess installieren'],
+		'Agrega esta app a tu pantalla de inicio para abrirla rápidamente.': ['Add this app to your home screen for quick access.', 'Fügen Sie diese App zum schnellen Zugriff Ihrem Startbildschirm hinzu.'],
+		'Abre esta página en Safari.': ['Open this page in Safari.', 'Öffnen Sie diese Seite in Safari.'],
+		'Pulsa Compartir y selecciona «Añadir a pantalla de inicio».': ['Tap Share, then choose “Add to Home Screen”.', 'Tippen Sie auf „Teilen“ und wählen Sie „Zum Home-Bildschirm“.'],
+		'Confirma con «Añadir». Después, abre la app desde tu pantalla de inicio.': ['Confirm by tapping “Add”, then open the app from your home screen.', 'Bestätigen Sie mit „Hinzufügen“ und öffnen Sie die App anschließend vom Startbildschirm.'],
+		'Abre el menú del navegador (⋮) y elige «Instalar app» o «Añadir a pantalla de inicio».': ['Open your browser menu (⋮) and choose “Install app” or “Add to Home Screen”.', 'Öffnen Sie das Browsermenü (⋮) und wählen Sie „App installieren“ oder „Zum Startbildschirm hinzufügen“.'],
+		'Confirma la instalación y abre la app desde tu pantalla de inicio.': ['Confirm the installation and open the app from your home screen.', 'Bestätigen Sie die Installation und öffnen Sie die App vom Startbildschirm.'],
+		'Usa la opción «Instalar» o «Añadir a pantalla de inicio» del menú del navegador.': ['Use “Install” or “Add to Home Screen” in your browser menu.', 'Wählen Sie im Browsermenü „Installieren“ oder „Zum Startbildschirm hinzufügen“.']
 	};
 
 	const reverse = { en: {}, de: {} };

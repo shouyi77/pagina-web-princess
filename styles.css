@@ -8,12 +8,13 @@
 	--white: #fbfdfc;
 	--serif: "Fraunces", Georgia, serif;
 	--sans: "Hanken Grotesk", system-ui, sans-serif;
-	--header-h: 64px;
+	--header-h: calc(64px + env(safe-area-inset-top, 0px));
 }
 
 /* ---------- Base ---------- */
 *, *::before, *::after { box-sizing: border-box; }
 html { scroll-behavior: smooth; scroll-padding-top: calc(var(--header-h) + var(--bar-h)); }
+html { overflow-x: clip; }
 body { margin: 0; font: 400 1.0625rem/1.65 var(--sans); color: var(--ink); background: var(--white); }
 h1, h2, h3 { font-family: var(--serif); font-weight: 600; line-height: 1.15; margin: 0 0 .5em; }
 h1 { font-size: clamp(2.6rem, 7vw, 5rem); }
@@ -35,7 +36,7 @@ a { color: inherit; }
 /* ---------- Cabecera ---------- */
 #header {
 	position: fixed; inset: 0 0 auto 0; height: var(--header-h); z-index: 20;
-	display: flex; align-items: center; justify-content: space-between; padding: 0 5vw;
+	display: flex; align-items: center; justify-content: space-between; 	padding: env(safe-area-inset-top, 0px) 5vw 0;
 	color: var(--white); transition: background .3s, box-shadow .3s;
 	background: var(--ink);
 }
@@ -76,6 +77,9 @@ a { color: inherit; }
 	position: relative; overflow: hidden;
 	min-height: 100vh; display: flex; align-items: flex-end; padding: 0 5vw 12vh; color: var(--white);
 	background: var(--ink);
+}
+@supports (min-height: 100svh) {
+	.hero { min-height: 100svh; }
 }
 /* Capa oscura sobre las imágenes */
 .hero::before {
@@ -364,7 +368,7 @@ input.invalid { border-color: #b3261e; }
 .cookie-banner {
 	position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
 	display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem 2rem;
-	padding: 1.2rem 5vw; background: var(--ink); color: var(--white);
+	padding: 1.2rem 5vw calc(1.2rem + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--white);
 	border-top: 3px solid var(--sun); box-shadow: 0 -6px 24px rgba(0, 0, 0, .3);
 	transform: translateY(100%); transition: transform .4s ease;
 }
@@ -411,9 +415,15 @@ input.invalid { border-color: #b3261e; }
 }
 @media (max-width: 520px) {
 	.user-text { display: none; }
-	.user-link { padding: .25em; }
-	.language-picker { margin-left: .5rem; }
+	#header { gap: .45rem; padding-left: max(1rem, env(safe-area-inset-left, 0px)); padding-right: max(1rem, env(safe-area-inset-right, 0px)); }
+	#header .logo { min-width: 0; overflow: hidden; font-size: clamp(1rem, 4.2vw, 1.2rem); text-overflow: ellipsis; white-space: nowrap; }
+	.user-link { flex: 0 0 auto; margin-left: 0; padding: .1em; }
+	.language-picker { flex: 0 0 auto; margin-left: 0; }
 	.language-picker span { display: none; }
+	.language-picker select { max-width: 3.75rem; padding-inline: .15rem; }
+	.user-icon { width: 32px; height: 32px; }
+	.user-icon svg { width: 18px; height: 18px; }
+	.menu-toggle { flex: 0 0 auto; margin-left: 0; padding: .35rem .5rem; font-size: .95rem; }
 }
 .menu-toggle { order: 3; margin-left: .8rem; }
 
@@ -954,7 +964,7 @@ a.weather:hover {
 
 /* ---------- Chatbot ---------- */
 .chatbot-floating-btn {
-	position: fixed; right: 1.2rem; bottom: 5rem; z-index: 36;
+	position: fixed; right: 1.2rem; bottom: calc(5rem + env(safe-area-inset-bottom, 0px)); z-index: 36;
 	padding: .7em 1.2em; border: 0; border-radius: 999px;
 	background: var(--sun); color: var(--ink); font: 700 1rem var(--sans);
 	cursor: pointer; box-shadow: 0 4px 14px rgba(0, 0, 0, .3);
@@ -965,7 +975,7 @@ a.weather:hover {
 }
 
 .chatbot-box {
-	position: fixed; right: 1.2rem; bottom: 9rem; z-index: 36;
+	position: fixed; right: 1.2rem; bottom: calc(9rem + env(safe-area-inset-bottom, 0px)); z-index: 36;
 	width: 340px; max-width: calc(100vw - 2.4rem);
 	height: 460px; max-height: 70vh;
 	display: flex; flex-direction: column;
@@ -1008,13 +1018,37 @@ a.weather:hover {
 body { -webkit-tap-highlight-color: transparent; }
 
 .install-btn {
-	position: fixed; left: 1.2rem; bottom: 5rem; z-index: 35;
+	position: fixed; left: calc(1.2rem + env(safe-area-inset-left, 0px)); bottom: calc(5rem + env(safe-area-inset-bottom, 0px)); z-index: 35;
 	height: 44px; padding: 0 1.1rem; border: 0; border-radius: 999px;
 	background: var(--sun); color: var(--ink); font: 700 .95rem var(--sans);
 	cursor: pointer; box-shadow: 0 4px 14px rgba(0, 0, 0, .3);
 }
 .install-btn[hidden] { display: none; }
 @media (display-mode: standalone) { .install-btn { display: none; } }
+
+.install-dialog {
+	width: min(440px, calc(100vw - 2rem)); max-width: none; max-height: min(80vh, 36rem);
+	padding: 1.5rem; border: 0; border-radius: 18px;
+	background: var(--white); color: var(--ink);
+	box-shadow: 0 20px 60px rgba(0, 0, 0, .35);
+}
+@supports (max-height: 80dvh) {
+	.install-dialog { max-height: min(80dvh, 36rem); }
+}
+.install-dialog::backdrop { background: rgba(8, 20, 25, .7); }
+.install-dialog h2 { font-size: 1.65rem; }
+.install-dialog p { margin-bottom: .75rem; }
+.install-dialog ol { padding-left: 1.5rem; }
+.install-dialog li { padding-left: .2rem; margin-bottom: .6rem; }
+.install-dialog-close { min-height: 44px; padding: .6rem 1rem; border: 0; border-radius: 999px; background: var(--ink); color: var(--white); font: 700 1rem var(--sans); cursor: pointer; }
+.install-dialog[open] { animation: modal-in .2s ease-out; }
+@media (max-width: 520px) {
+	.install-dialog {
+		position: fixed; inset: auto .5rem calc(1rem + env(safe-area-inset-bottom, 0px));
+		margin-inline: auto; padding: 1.25rem;
+	}
+	.install-btn { bottom: calc(10rem + env(safe-area-inset-bottom, 0px)); }
+}
 
 /* Zonas táctiles de al menos 44 px (móvil y iPad) */
 @media (pointer: coarse) {
