@@ -239,32 +239,6 @@
         </div>
     </div>
 
-    <div class="modal" id="user-modal" hidden>
-        <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="user-title">
-            <button type="button" class="modal-close" id="user-close" aria-label="Cerrar">×</button>
-
-            <div id="user-form-view">
-                <h2 id="user-title">Crea tu cuenta</h2>
-                <p class="modal-sub">Regístrate para guardar tus datos en tus próximas reservas.</p>
-                <form id="user-form" novalidate>
-                    <div class="field"><label for="u-name">Nombre</label><input id="u-name" type="text" autocomplete="name" required></div>
-                    <div class="field"><label for="u-email">Email</label><input id="u-email" type="email" autocomplete="email" required></div>
-                    <div class="field"><label for="u-pass">Contraseña</label><input id="u-pass" type="password" minlength="8" autocomplete="new-password" required></div>
-                    <div class="field"><label for="u-pass2">Repetir contraseña</label><input id="u-pass2" type="password" autocomplete="new-password" required></div>
-                    <div class="field check"><label><input id="u-terms" type="checkbox"> Acepto las condiciones de uso</label></div>
-                    <p id="user-status" role="status" aria-live="polite"></p>
-                    <button type="submit" class="btn">Registrarme</button>
-                </form>
-            </div>
-
-            <div id="user-logged-view" hidden>
-                <h2>Sesión iniciada</h2>
-                <p class="modal-sub" id="user-logged-text"></p>
-                <button type="button" class="btn" id="user-logout">Cerrar sesión</button>
-            </div>
-        </div>
-    </div>
-
 	<!-- ═══════════════════ MÚSICA DE FONDO ═══════════════════ -->
 	<audio id="bg-music" loop preload="none">
 		<source src="musica.mp3" type="audio/mpeg">

@@ -9,6 +9,113 @@ const API_BASE = window.PRINCESS_API_BASE ||
 	const $ = function (s) { return document.querySelector(s); };
 	const $$ = function (s) { return Array.from(document.querySelectorAll(s)); };
 
+	/* ---- Sesión de usuario guardada en el navegador ---- */
+	const AUTH_KEY = 'princess-auth';
+	let memoryAuth = null; // plan B si el navegador bloquea localStorage
+	const Auth = {
+		read: function () {
+			try {
+				const data = JSON.parse(localStorage.getItem(AUTH_KEY));
+				if (data && typeof data.token === 'string' && data.user) return data;
+			} catch (e) { /* sin almacenamiento */ }
+			return memoryAuth;
+		},
+		write: function (data) {
+			memoryAuth = data || null;
+			try {
+				if (data) localStorage.setItem(AUTH_KEY, JSON.stringify(data));
+				else localStorage.removeItem(AUTH_KEY);
+			} catch (e) { /* sin almacenamiento */ }
+			window.dispatchEvent(new CustomEvent('princess-auth-change'));
+		}
+	};
+	// Si inicias o cierras sesión en otra pestaña, esta se entera
+	window.addEventListener('storage', function (e) {
+		if (e.key === AUTH_KEY) window.dispatchEvent(new CustomEvent('princess-auth-change'));
+	});
+
+	/* ---- Cliente de la API: añade la sesión, limita el tiempo y devuelve errores legibles ---- */
+	const API_TIMEOUT = 30000; // el servidor gratuito puede tardar en "despertar"
+	function apiFetch(path, options) {
+		options = options || {};
+		const headers = {};
+		if (options.body !== undefined) headers['Content-Type'] = 'application/json';
+		const auth = Auth.read();
+		if (auth && !options.anonymous) headers.Authorization = 'Bearer ' + auth.token;
+		const controller = new AbortController();
+		const timer = setTimeout(function () { controller.abort(); }, API_TIMEOUT);
+		return fetch(API_BASE + path, {
+			method: options.method || 'GET',
+			headers: headers,
+			body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+			signal: controller.signal
+		}).then(function (response) {
+			return response.json().catch(function () { return {}; }).then(function (data) {
+				if (!response.ok) {
+					const error = new Error(data.error || 'No se pudo completar la operación.');
+					error.status = response.status;
+					throw error;
+				}
+				return data;
+			});
+		}, function () {
+			throw new Error('No se pudo conectar con el servidor. Si acaba de arrancar, espera unos segundos e inténtalo de nuevo.');
+		}).finally(function () { clearTimeout(timer); });
+	}
+
+	// Despierta el servidor gratuito una vez por visita, para que la primera acción no espere
+	try {
+		if (!sessionStorage.getItem('princess-api-warm')) {
+			sessionStorage.setItem('princess-api-warm', '1');
+			fetch(API_BASE + '/api/health').catch(function () { /* da igual si falla */ });
+		}
+	} catch (e) { /* sin almacenamiento */ }
+
+	const euroFormat = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' });
+	function euros(amount) { return euroFormat.format(amount); }
+	function pageLocale() {
+		return document.documentElement.lang === 'de' ? 'de-DE' :
+			(document.documentElement.lang === 'en' ? 'en-GB' : 'es-ES');
+	}
+	function shortDate(iso) {
+		const p = String(iso).split('-').map(Number);
+		return new Date(p[0], p[1] - 1, p[2]).toLocaleDateString(pageLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
+	}
+
+	// Capacidad por habitación: debe coincidir con ROOMS de servidor.py
+	const ROOM_CAP = {
+		'Estándar': { adults: 3, children: 2, guests: 4 },
+		'Familiar Superior': { adults: 4, children: 2, guests: 6 },
+		'Ocean Suite': { adults: 3, children: 2, guests: 5 }
+	};
+	function fitsRoom(type, rooms, adults, children) {
+		const cap = ROOM_CAP[type];
+		return !!cap && adults <= cap.adults * rooms && children <= cap.children * rooms &&
+			adults + children <= cap.guests * rooms;
+	}
+	// Devuelve '' si los huéspedes caben; si no, un mensaje con una sugerencia
+	function capacityProblem(type, rooms, adults, children) {
+		if (fitsRoom(type, rooms, adults, children)) return '';
+		const other = Object.keys(ROOM_CAP).find(function (t) { return fitsRoom(t, rooms, adults, children); });
+		return window.siteText('Este tipo de habitación no admite a todos los huéspedes.') + ' ' +
+			(other ? window.siteText('Prueba con') + ' ' + window.siteText(other) + '.'
+				: window.siteText('Añade otra habitación o reparte los huéspedes.'));
+	}
+
+	// Si hay sesión iniciada, rellena nombre y email en los formularios de reserva
+	function prefillAccount() {
+		const auth = Auth.read();
+		if (!auth) return;
+		[['#name', auth.user.name], ['#email', auth.user.email],
+			['#service-name', auth.user.name], ['#service-email', auth.user.email]].forEach(function (pair) {
+			const input = $(pair[0]);
+			if (input && !input.value) input.value = pair[1];
+		});
+	}
+	window.addEventListener('princess-auth-change', prefillAccount);
+	prefillAccount();
+
+
 	const root = document.documentElement;
 	root.classList.add('js');
 	window.addEventListener('load', function () { root.classList.add('loaded'); });
@@ -248,13 +355,16 @@ const API_BASE = window.PRINCESS_API_BASE ||
 				setStatus('La fecha de salida debe ser posterior a la de entrada.', 'error');
 				return;
 			}
+			const problem = capacityProblem(form.elements.room.value, Number(form.elements.rooms.value),
+				Number(form.elements.adults.value), Number(form.elements.children.value));
+			if (problem) { setStatus(problem, 'error'); return; }
+
 			const submitButton = form.querySelector('[type="submit"]');
 			submitButton.disabled = true;
-			setStatus('Comprobando disponibilidad…', '');
-			fetch(API_BASE + '/api/bookings', {
+			setStatus(window.siteText('Comprobando disponibilidad…'), '');
+			apiFetch('/api/bookings', {
 				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
+				body: {
 					name: form.elements.name.value.trim(),
 					email: form.elements.email.value.trim(),
 					checkin: checkin.value,
@@ -266,26 +376,31 @@ const API_BASE = window.PRINCESS_API_BASE ||
 					promo: form.elements.promo.value,
 					resident: form.elements.resident.checked,
 					message: form.elements.message.value
-				})
+				}
 			})
-				.then(function (response) {
-					return response.json().then(function (data) {
-						if (!response.ok) throw new Error(data.error || 'No se pudo registrar la reserva.');
-						return data;
-					});
-				})
 				.then(function (data) {
 					form.reset();
+					prefillAccount();
 					const manageUrl = new URL('reservas.html', location.href);
 					manageUrl.searchParams.set('manage', data.management_token);
-					setStatus(window.siteText(data.message) + ' Referencia: ' + data.reference + '.', 'ok');
+					setStatus(window.siteText(data.message) + ' ' + window.siteText('Referencia') + ': ' + data.reference + '. ' +
+						window.siteText('Total orientativo: ') + euros(data.total), 'ok');
 					const manageLink = $('#booking-manage-link');
 					manageLink.href = manageUrl.href;
-					manageLink.textContent = 'Abrir gestión de la reserva';
+					manageLink.textContent = window.siteText('Abrir gestión de la reserva');
 					manageLink.hidden = false;
+					const note = $('#booking-manage-note');
+					if (note) {
+						note.textContent = window.siteText(Auth.read()
+							? 'También la verás en tu cuenta, en «Mis reservas».'
+							: 'Guarda este enlace: es la forma de consultar o cancelar la reserva. Con una cuenta la verás siempre en «Mis reservas».');
+						note.hidden = false;
+					}
+					try { sessionStorage.setItem('princess-manage-token', data.management_token); } catch (err) { /* sin almacenamiento */ }
+					window.dispatchEvent(new CustomEvent('princess-bookings-change'));
 				})
 				.catch(function (error) {
-					setStatus(window.siteText(error.message || 'No se pudo conectar con el servidor. Inténtalo de nuevo.'), 'error');
+					setStatus(window.siteText(error.message), 'error');
 				})
 				.then(function () { submitButton.disabled = false; });
 		});
@@ -296,34 +411,32 @@ const API_BASE = window.PRINCESS_API_BASE ||
 	if (manageForm) {
 		const tokenInput = $('#manage-token');
 		const manageStatus = $('#manage-status');
+		const STATUS_LABEL = { confirmed: 'confirmada', cancelled: 'cancelada' };
 		const setManageStatus = function (message, type) {
 			manageStatus.textContent = message;
 			manageStatus.className = type;
 		};
 		const tokenFromUrl = new URLSearchParams(location.search).get('manage');
+		let savedToken = '';
+		try { savedToken = sessionStorage.getItem('princess-manage-token') || ''; } catch (e) { /* sin almacenamiento */ }
 		if (tokenFromUrl) tokenInput.value = tokenFromUrl;
+		else if (savedToken) tokenInput.value = savedToken;
+		const bookingPath = function () { return '/api/bookings/' + encodeURIComponent(tokenInput.value.trim()); };
 
 		function loadManagedBooking() {
-			const token = tokenInput.value.trim();
-			if (!token) {
+			if (!tokenInput.value.trim()) {
 				setManageStatus('Introduce el código seguro recibido en el correo.', 'error');
 				return Promise.resolve();
 			}
-			return fetch(API_BASE + '/api/bookings/' + encodeURIComponent(token))
-				.then(function (response) {
-					return response.json().then(function (data) {
-						if (!response.ok) throw new Error(data.error || 'No se encontró la reserva.');
-						return data;
-					});
-				})
+			return apiFetch(bookingPath(), { anonymous: true })
 				.then(function (booking) {
 					manageForm.elements.checkin.value = booking.checkin;
 					manageForm.elements.checkout.value = booking.checkout;
 					manageForm.elements.room.value = booking.room;
 					manageForm.elements.rooms.value = booking.rooms;
 					setManageStatus(window.siteText('Reserva') + ' ' + booking.reference + ': ' +
-						window.siteText(booking.status) + '. ' + window.siteText('Total orientativo: ') +
-						new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(booking.total), 'ok');
+						window.siteText(STATUS_LABEL[booking.status] || booking.status) + '. ' +
+						window.siteText('Total orientativo: ') + euros(booking.total), 'ok');
 				})
 				.catch(function (error) { setManageStatus(window.siteText(error.message), 'error'); });
 		}
@@ -331,37 +444,30 @@ const API_BASE = window.PRINCESS_API_BASE ||
 		$('#load-booking').addEventListener('click', loadManagedBooking);
 		manageForm.addEventListener('submit', function (event) {
 			event.preventDefault();
-			fetch(API_BASE + '/api/bookings/' + encodeURIComponent(tokenInput.value.trim()), {
+			apiFetch(bookingPath(), {
 				method: 'PATCH',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
+				anonymous: true,
+				body: {
 					checkin: manageForm.elements.checkin.value,
 					checkout: manageForm.elements.checkout.value,
 					room: manageForm.elements.room.value,
 					rooms: manageForm.elements.rooms.value
-				})
+				}
 			})
-				.then(function (response) {
-					return response.json().then(function (data) {
-						if (!response.ok) throw new Error(data.error || 'No se pudo actualizar la reserva.');
-						return data;
-					});
+				.then(function (data) {
+					setManageStatus(window.siteText(data.message) + ' ' + window.siteText('Nuevo total orientativo: ') + euros(data.total), 'ok');
+					window.dispatchEvent(new CustomEvent('princess-bookings-change'));
 				})
-				.then(function (data) { setManageStatus(window.siteText(data.message) + ' Nuevo total orientativo: ' +
-					new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(data.total), 'ok'); })
 				.catch(function (error) { setManageStatus(window.siteText(error.message), 'error'); });
 		});
 		$('#cancel-booking').addEventListener('click', function () {
-			if (!tokenInput.value.trim() || !window.confirm('¿Quieres cancelar esta reserva?')) return;
-			fetch(API_BASE + '/api/bookings/' + encodeURIComponent(tokenInput.value.trim()) + '/cancel', { method: 'POST' })
-				.then(function (response) {
-					return response.json().then(function (data) {
-						if (!response.ok) throw new Error(data.error || 'No se pudo cancelar la reserva.');
-						return data;
-					});
+			if (!tokenInput.value.trim() || !window.confirm(window.siteText('¿Quieres cancelar esta reserva?'))) return;
+			apiFetch(bookingPath() + '/cancel', { method: 'POST', anonymous: true })
+				.then(function (data) {
+					setManageStatus(window.siteText(data.message), 'ok');
+					window.dispatchEvent(new CustomEvent('princess-bookings-change'));
 				})
-				.then(function (data) { setManageStatus(window.siteText(data.message), 'ok'); })
-				.catch(function (error) { setManageStatus(error.message, 'error'); });
+				.catch(function (error) { setManageStatus(window.siteText(error.message), 'error'); });
 		});
 		if (tokenFromUrl) loadManagedBooking();
 	}
@@ -433,13 +539,25 @@ const API_BASE = window.PRINCESS_API_BASE ||
 	}
 
 	function loadQuickbarState() {
+		let data = null;
 		try {
 			const raw = sessionStorage.getItem(STORAGE_KEY);
-			if (!raw) return;
-			const data = JSON.parse(raw);
-			if (!data || typeof data !== 'object') return;
-			savedQuickbarState = data;
+			data = raw ? JSON.parse(raw) : null;
+		} catch (e) { data = null; }
+		if (!data || typeof data !== 'object') data = {};
 
+		// Los datos de la URL (al llegar desde la barra de otra página) mandan sobre los guardados
+		const params = new URLSearchParams(location.search);
+		['checkin', 'checkout', 'adults', 'children', 'rooms', 'promo'].forEach(function (key) {
+			if (params.has(key)) data[key] = params.get(key);
+		});
+		if (params.has('resident')) data.resident = params.get('resident') === '1';
+		if (params.has('adults') || params.has('children') || params.has('rooms')) delete data.guestRooms;
+		if (data.promo !== undefined) data.promo = String(data.promo).replace(/\D/g, '').slice(0, 6);
+		if (!Object.keys(data).length) return;
+		savedQuickbarState = data;
+
+		try {
 			if (qbIn && /^\d{4}-\d{2}-\d{2}$/.test(data.checkin || '') && data.checkin >= toISO(new Date())) {
 				qbIn.value = data.checkin;
 			}
@@ -470,7 +588,7 @@ const API_BASE = window.PRINCESS_API_BASE ||
 		const panel = $('#guests-panel');
 		const list = $('#rooms-list');
 		const addBtn = $('#add-room');
-		const MAX_ROOMS = 4, MAX_ADULTS = 4, MAX_CHILDREN = 3;
+		const MAX_ROOMS = 4, MAX_ADULTS = 4, MAX_CHILDREN = 2;
 		function validGuestRoom(room) {
 			return room && Number.isInteger(room.adults) && room.adults >= 1 && room.adults <= MAX_ADULTS &&
 				Number.isInteger(room.children) && room.children >= 0 && room.children <= MAX_CHILDREN;
@@ -588,6 +706,11 @@ const API_BASE = window.PRINCESS_API_BASE ||
 			if (field && params.has(name)) field.value = params.get(name);
 			else if (field && savedQuickbarState && savedQuickbarState[name] !== undefined) field.value = savedQuickbarState[name];
 		});
+		// La barra ya ha ajustado huéspedes y habitaciones a los límites reales: se usan esos valores
+		['adults', 'children', 'rooms'].forEach(function (name) {
+			const hidden = $('#qb-' + name);
+			if (hidden && form.elements[name]) form.elements[name].value = hidden.value;
+		});
 		if (form.elements.resident) {
 			form.elements.resident.checked = params.has('resident')
 				? params.get('resident') === '1'
@@ -704,49 +827,200 @@ const API_BASE = window.PRINCESS_API_BASE ||
 		}
 	}
 
-	/* ---- Pop-up de usuario (registro simulado) ---- */
+	/* ---- Cuenta de usuario: registro, inicio de sesión y sesión guardada ---- */
 	const userBtn = $('#user-btn');
 	if (userBtn) {
-		const modal = $('#user-modal');
-		const formView = $('#user-form-view');
+		const staleModal = $('#user-modal');
+		if (staleModal) staleModal.remove();
+
+		const modal = document.createElement('div');
+		modal.className = 'modal';
+		modal.id = 'user-modal';
+		modal.hidden = true;
+		modal.innerHTML =
+			'<div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="user-title">' +
+				'<button type="button" class="modal-close" id="user-close" aria-label="Cerrar">×</button>' +
+				'<div id="user-guest-view">' +
+					'<h2 id="user-title">Tu cuenta</h2>' +
+					'<div class="auth-tabs" role="tablist">' +
+						'<button type="button" role="tab" id="tab-login" aria-selected="true" aria-controls="login-form">Iniciar sesión</button>' +
+						'<button type="button" role="tab" id="tab-register" aria-selected="false" aria-controls="register-form" tabindex="-1">Crear cuenta</button>' +
+					'</div>' +
+					'<form id="login-form" role="tabpanel" aria-labelledby="tab-login" novalidate>' +
+						'<div class="field"><label for="l-email">Email</label><input id="l-email" type="email" autocomplete="email" required></div>' +
+						'<div class="field"><label for="l-pass">Contraseña</label><input id="l-pass" type="password" autocomplete="current-password" required></div>' +
+						'<button type="submit" class="btn">Iniciar sesión</button>' +
+					'</form>' +
+					'<form id="register-form" role="tabpanel" aria-labelledby="tab-register" novalidate hidden>' +
+						'<div class="field"><label for="r-name">Nombre</label><input id="r-name" type="text" autocomplete="name" required></div>' +
+						'<div class="field"><label for="r-email">Email</label><input id="r-email" type="email" autocomplete="email" required></div>' +
+						'<div class="field"><label for="r-pass">Contraseña</label><input id="r-pass" type="password" minlength="8" autocomplete="new-password" required></div>' +
+						'<div class="field"><label for="r-pass2">Repetir contraseña</label><input id="r-pass2" type="password" autocomplete="new-password" required></div>' +
+						'<div class="field check"><label><input id="r-terms" type="checkbox"> Acepto las condiciones de uso</label></div>' +
+						'<button type="submit" class="btn">Crear cuenta</button>' +
+					'</form>' +
+					'<p id="user-status" role="status" aria-live="polite"></p>' +
+				'</div>' +
+				'<div id="user-logged-view" hidden>' +
+					'<h2>Sesión iniciada</h2>' +
+					'<p class="modal-sub" id="user-logged-text"></p>' +
+					'<p id="user-logged-msg" role="status" aria-live="polite"></p>' +
+					'<h3 class="my-bookings-title">Mis reservas</h3>' +
+					'<ul class="my-bookings" id="my-bookings"></ul>' +
+					'<p id="my-bookings-status" role="status" aria-live="polite"></p>' +
+					'<button type="button" class="btn" id="user-logout">Cerrar sesión</button>' +
+				'</div>' +
+			'</div>';
+		document.body.appendChild(modal);
+
+		const guestView = $('#user-guest-view');
 		const loggedView = $('#user-logged-view');
-		const userForm = $('#user-form');
+		const loginForm = $('#login-form');
+		const registerForm = $('#register-form');
+		const tabLogin = $('#tab-login');
+		const tabRegister = $('#tab-register');
 		const userStatus = $('#user-status');
-		const USER_KEY = 'la-palma-princess-user';
+		const loggedMsg = $('#user-logged-msg');
+		const bookingsList = $('#my-bookings');
+		const bookingsStatus = $('#my-bookings-status');
+		const SERVICE_NAMES = { spa: 'Aqua Princess Spa', restaurant: 'Restaurante', activity: 'Actividad' };
+		const STATUS_NAMES = { confirmed: 'confirmada', cancelled: 'cancelada' };
 		let opener = null;
 
-		function getUser() {
-			try { return JSON.parse(localStorage.getItem(USER_KEY)); } catch (e) { return null; }
-		}
-		function saveUser(user) {
-			try {
-				if (user) localStorage.setItem(USER_KEY, JSON.stringify(user));
-				else localStorage.removeItem(USER_KEY);
-			} catch (e) { /* sin almacenamiento */ }
+		function setStatus(message, type) {
+			userStatus.textContent = message ? window.siteText(message) : '';
+			userStatus.className = type || '';
 		}
 
-		// Muestra el formulario o la vista de sesión iniciada
+		/* Pestañas: iniciar sesión / crear cuenta */
+		function showTab(name, focus) {
+			const login = name === 'login';
+			tabLogin.setAttribute('aria-selected', login);
+			tabRegister.setAttribute('aria-selected', !login);
+			tabLogin.tabIndex = login ? 0 : -1;
+			tabRegister.tabIndex = login ? -1 : 0;
+			loginForm.hidden = !login;
+			registerForm.hidden = login;
+			setStatus('');
+			if (focus) (login ? $('#l-email') : $('#r-name')).focus();
+		}
+		tabLogin.addEventListener('click', function () { showTab('login', true); });
+		tabRegister.addEventListener('click', function () { showTab('register', true); });
+		[tabLogin, tabRegister].forEach(function (tab) {
+			tab.addEventListener('keydown', function (e) {
+				if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+					e.preventDefault();
+					const next = tab === tabLogin ? tabRegister : tabLogin;
+					showTab(next === tabLogin ? 'login' : 'register');
+					next.focus();
+				}
+			});
+		});
+
+		/* Qué se ve según haya sesión o no */
 		function refreshUser() {
-			const user = getUser();
-			$('#user-label').textContent = user ? 'Hola, ' + user.name.split(' ')[0] : 'Usuario';
-			formView.hidden = !!user;
+			const auth = Auth.read();
+			const user = auth && auth.user;
+			$('#user-label').textContent = user
+				? window.siteText('Hola') + ', ' + String(user.name).split(' ')[0]
+				: window.siteText('Usuario');
+			guestView.hidden = !!user;
 			loggedView.hidden = !user;
-			if (user) $('#user-logged-text').textContent = user.name + ' (' + user.email + ')';
+			if (user) {
+				$('#user-logged-text').textContent = user.name + ' (' + user.email + ')';
+				if (!modal.hidden) loadMyBookings();
+			} else {
+				bookingsList.replaceChildren();
+				loggedMsg.textContent = '';
+			}
 		}
+		window.addEventListener('princess-auth-change', refreshUser);
+		window.addEventListener('site-language-change', refreshUser);
+		window.addEventListener('princess-bookings-change', function () {
+			if (!modal.hidden && Auth.read()) loadMyBookings();
+		});
 
+		/* Mis reservas */
+		function addLine(item, className, text) {
+			const span = document.createElement('span');
+			span.className = className;
+			span.textContent = text;
+			item.appendChild(span);
+		}
+		function renderMyBookings(data) {
+			bookingsList.replaceChildren();
+			const todayIso = toISO(new Date());
+			data.bookings.forEach(function (b) {
+				const item = document.createElement('li');
+				addLine(item, 'mb-title', b.reference + ' · ' + window.siteText(b.room));
+				addLine(item, 'mb-detail', shortDate(b.checkin) + ' → ' + shortDate(b.checkout) + ' · ' + b.rooms + ' ' +
+					window.siteText('hab.') + ' · ' + euros(b.total));
+				addLine(item, 'mb-state mb-' + b.status, window.siteText(STATUS_NAMES[b.status] || b.status));
+				if (b.status === 'confirmed' && b.checkout >= todayIso) {
+					const cancel = document.createElement('button');
+					cancel.type = 'button';
+					cancel.className = 'mb-cancel';
+					cancel.dataset.ref = b.reference;
+					cancel.textContent = window.siteText('Cancelar reserva');
+					item.appendChild(cancel);
+				}
+				bookingsList.appendChild(item);
+			});
+			data.services.forEach(function (s) {
+				const item = document.createElement('li');
+				addLine(item, 'mb-title', s.reference + ' · ' + window.siteText(SERVICE_NAMES[s.service] || s.service));
+				addLine(item, 'mb-detail', shortDate(s.service_date) + ' · ' + s.service_time + ' · ' + s.guests + ' ' +
+					window.siteText(s.guests === 1 ? 'persona' : 'personas'));
+				bookingsList.appendChild(item);
+			});
+			if (!bookingsList.children.length) {
+				const empty = document.createElement('li');
+				empty.className = 'mb-empty';
+				empty.textContent = window.siteText('Aún no tienes reservas hechas con tu cuenta.');
+				bookingsList.appendChild(empty);
+			}
+		}
+		function loadMyBookings() {
+			bookingsStatus.textContent = '';
+			bookingsStatus.className = '';
+			apiFetch('/api/me/bookings')
+				.then(renderMyBookings)
+				.catch(function (error) {
+					if (error.status === 401) { Auth.write(null); return; }
+					bookingsStatus.textContent = window.siteText(error.message);
+					bookingsStatus.className = 'error';
+				});
+		}
+		bookingsList.addEventListener('click', function (e) {
+			const button = e.target.closest('.mb-cancel');
+			if (!button || !window.confirm(window.siteText('¿Quieres cancelar esta reserva?'))) return;
+			button.disabled = true;
+			apiFetch('/api/me/bookings/' + encodeURIComponent(button.dataset.ref) + '/cancel', { method: 'POST' })
+				.then(function (data) {
+					bookingsStatus.textContent = window.siteText(data.message);
+					bookingsStatus.className = 'ok';
+					loadMyBookings();
+				})
+				.catch(function (error) {
+					button.disabled = false;
+					bookingsStatus.textContent = window.siteText(error.message);
+					bookingsStatus.className = 'error';
+				});
+		});
+
+		/* Abrir y cerrar el pop-up */
 		function openModal() {
 			opener = userBtn;
+			setStatus('');
 			refreshUser();
-			userStatus.textContent = '';
 			modal.hidden = false;
-			const first = getUser() ? $('#user-logout') : $('#u-name');
-			first.focus();
+			if (Auth.read()) { loadMyBookings(); $('#user-logout').focus(); }
+			else $(loginForm.hidden ? '#r-name' : '#l-email').focus();
 		}
 		function closeModal() {
 			modal.hidden = true;
 			if (opener) opener.focus();
 		}
-
 		userBtn.addEventListener('click', openModal);
 		$('#user-close').addEventListener('click', closeModal);
 		modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
@@ -757,43 +1031,96 @@ const API_BASE = window.PRINCESS_API_BASE ||
 			if (e.key === 'Escape') { closeModal(); return; }
 			if (e.key !== 'Tab') return;
 			const items = Array.from(modal.querySelectorAll('button, input, a[href]')).filter(function (el) {
-				return !el.disabled && el.offsetParent !== null;
+				return !el.disabled && el.offsetParent !== null && el.tabIndex >= 0;
 			});
 			const first = items[0], last = items[items.length - 1];
 			if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
 			else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
 		});
 
-		userForm.addEventListener('submit', function (e) {
-			e.preventDefault();
-			const fields = ['#u-name', '#u-email', '#u-pass', '#u-pass2'].map($);
+		/* Enviar formularios */
+		function validate(inputs) {
 			let valid = true;
-			fields.forEach(function (input) {
+			inputs.forEach(function (input) {
 				const ok = input.value.trim() !== '' && input.checkValidity();
 				input.classList.toggle('invalid', !ok);
 				if (!ok) valid = false;
 			});
-			if (!valid) { userStatus.textContent = 'Revisa los campos marcados en rojo (la contraseña necesita 8 caracteres).'; userStatus.className = 'error'; return; }
-			if ($('#u-pass').value !== $('#u-pass2').value) {
-				$('#u-pass2').classList.add('invalid');
-				userStatus.textContent = 'Las contraseñas no coinciden.'; userStatus.className = 'error'; return;
-			}
-			if (!$('#u-terms').checked) { userStatus.textContent = 'Debes aceptar las condiciones de uso.'; userStatus.className = 'error'; return; }
+			return valid;
+		}
+		function startSession(data, message) {
+			Auth.write({ token: data.token, user: data.user });
+			loginForm.reset();
+			registerForm.reset();
+			setStatus('');
+			loggedMsg.textContent = window.siteText(message);
+			loadMyBookings();
+			$('#user-logout').focus();
+		}
+		function submitAuth(formEl, path, body, successMessage) {
+			const button = formEl.querySelector('[type="submit"]');
+			button.disabled = true;
+			setStatus('Conectando…', '');
+			apiFetch(path, { method: 'POST', body: body, anonymous: true })
+				.then(function (data) { startSession(data, successMessage); })
+				.catch(function (error) { setStatus(error.message, 'error'); })
+				.then(function () { button.disabled = false; });
+		}
 
-			// Registro simulado: no se guarda la contraseña
-			saveUser({ name: $('#u-name').value.trim(), email: $('#u-email').value.trim() });
-			userForm.reset();
-			refreshUser();
-			closeModal();
+		loginForm.addEventListener('submit', function (e) {
+			e.preventDefault();
+			if (!validate([$('#l-email'), $('#l-pass')])) {
+				setStatus('Escribe tu email y tu contraseña.', 'error');
+				return;
+			}
+			submitAuth(loginForm, '/api/auth/login',
+				{ email: $('#l-email').value.trim(), password: $('#l-pass').value },
+				'Has iniciado sesión.');
+		});
+
+		registerForm.addEventListener('submit', function (e) {
+			e.preventDefault();
+			if (!validate([$('#r-name'), $('#r-email'), $('#r-pass'), $('#r-pass2')])) {
+				setStatus('Revisa los campos marcados en rojo (la contraseña necesita 8 caracteres).', 'error');
+				return;
+			}
+			if ($('#r-pass').value !== $('#r-pass2').value) {
+				$('#r-pass2').classList.add('invalid');
+				setStatus('Las contraseñas no coinciden.', 'error');
+				return;
+			}
+			if (!$('#r-terms').checked) { setStatus('Debes aceptar las condiciones de uso.', 'error'); return; }
+			submitAuth(registerForm, '/api/auth/register', {
+				name: $('#r-name').value.trim(),
+				email: $('#r-email').value.trim(),
+				password: $('#r-pass').value,
+				terms: true
+			}, 'Cuenta creada. Ya has iniciado sesión.');
 		});
 
 		$('#user-logout').addEventListener('click', function () {
-			saveUser(null);
-			refreshUser();
+			apiFetch('/api/auth/logout', { method: 'POST' }).catch(function () { /* la sesión local se cierra igualmente */ });
+			Auth.write(null);
+			showTab('login');
 			closeModal();
 		});
 
+		/* Al cargar la página: se muestra la sesión guardada y se comprueba que siga siendo válida */
 		refreshUser();
+		const stored = Auth.read();
+		if (stored) {
+			apiFetch('/api/auth/me')
+				.then(function (data) {
+					const current = Auth.read();
+					if (current && data.user && JSON.stringify(current.user) !== JSON.stringify(data.user)) {
+						Auth.write({ token: current.token, user: data.user });
+					}
+				})
+				.catch(function (error) {
+					// Solo se cierra la sesión si el servidor dice que caducó; sin conexión se conserva
+					if (error.status === 401) Auth.write(null);
+				});
+		}
 	}
 
 	/* ---- Mapa de ubicación (Leaflet, con plan B) ---- */
@@ -928,6 +1255,11 @@ const API_BASE = window.PRINCESS_API_BASE ||
 		}
 
 		let availabilityRequest = 0;
+		let availabilityTimer = null;
+		function stopAvailability() {
+			clearTimeout(availabilityTimer);
+			availabilityRequest++;
+		}
 		function updateSummary() {
 			const cin = form.elements.checkin.value;
 			const cout = form.elements.checkout.value;
@@ -937,6 +1269,8 @@ const API_BASE = window.PRINCESS_API_BASE ||
 			if (nights < 1) {
 				$('#sum-empty').hidden = false;
 				$('#sum-body').hidden = true;
+				stopAvailability();
+				$('#availability-status').textContent = '';
 				return;
 			}
 			$('#sum-empty').hidden = true;
@@ -983,9 +1317,16 @@ const API_BASE = window.PRINCESS_API_BASE ||
 
 			$('#sum-lines').innerHTML = html;
 			$('#sum-total').textContent = money().format(total);
-			const requestId = ++availabilityRequest;
 			const availabilityStatus = $('#availability-status');
-			availabilityStatus.textContent = 'Comprobando disponibilidad…';
+			stopAvailability();
+			const problem = capacityProblem(roomSelect.value, rooms, adults, children);
+			if (problem) {
+				availabilityStatus.textContent = problem;
+				availabilityStatus.className = 'summary-note availability-error';
+				return;
+			}
+			availabilityStatus.textContent = window.siteText('Comprobando disponibilidad…');
+			availabilityStatus.className = 'summary-note';
 			const query = new URLSearchParams({
 				checkin: cin,
 				checkout: cout,
@@ -996,30 +1337,33 @@ const API_BASE = window.PRINCESS_API_BASE ||
 				promo: form.elements.promo.value,
 				resident: form.elements.resident.checked ? '1' : '0'
 			});
-			fetch(API_BASE + '/api/availability?' + query.toString())
-				.then(function (response) {
-					return response.json().then(function (data) {
-						if (!response.ok) throw new Error(data.error || 'No se pudo consultar la disponibilidad.');
-						return data;
+			const requestId = availabilityRequest;
+			// Espera a que termines de escribir: antes se consultaba el servidor con cada tecla
+			availabilityTimer = setTimeout(function () {
+				apiFetch('/api/availability?' + query.toString(), { anonymous: true })
+					.then(function (data) {
+						if (requestId !== availabilityRequest) return;
+						availabilityStatus.textContent = data.available
+							? window.siteText('Disponible para estas fechas') + ' (' + data.rooms_available + ' ' +
+								window.siteText('habitaciones libres') + '). ' + window.siteText('Precio orientativo de demostración.')
+							: window.siteText('No hay disponibilidad suficiente para esas fechas.');
+						availabilityStatus.className = 'summary-note ' + (data.available ? 'availability-ok' : 'availability-error');
+					})
+					.catch(function (error) {
+						if (requestId !== availabilityRequest) return;
+						availabilityStatus.textContent = window.siteText(error.message);
+						availabilityStatus.className = 'summary-note availability-error';
 					});
-				})
-				.then(function (data) {
-					if (requestId !== availabilityRequest) return;
-					availabilityStatus.textContent = data.available
-						? window.siteText('Disponible para estas fechas') + ' (' + data.rooms_available + ' ' +
-							window.siteText('habitaciones libres') + '). ' + window.siteText('Precio orientativo de demostración.')
-						: window.siteText('No hay disponibilidad suficiente para esas fechas.');
-					availabilityStatus.className = data.available ? 'availability-ok' : 'availability-error';
-				})
-				.catch(function (error) {
-					if (requestId !== availabilityRequest) return;
-					availabilityStatus.textContent = error.message;
-					availabilityStatus.className = 'availability-error';
-				});
+			}, 450);
 		}
 
-		form.addEventListener('input', updateSummary);
-		form.addEventListener('change', updateSummary);
+		// Solo los campos que cambian el precio o la disponibilidad recalculan el resumen
+		const SUMMARY_FIELDS = ['checkin', 'checkout', 'room', 'rooms', 'adults', 'children', 'promo', 'resident'];
+		function onSummaryField(event) {
+			if (SUMMARY_FIELDS.indexOf(event.target.name) !== -1) updateSummary();
+		}
+		form.addEventListener('input', onSummaryField);
+		form.addEventListener('change', onSummaryField);
 		// form.reset() no dispara "input", así que se recalcula a mano
 		form.addEventListener('reset', function () { setTimeout(updateSummary, 0); });
 		window.addEventListener('site-language-change', updateSummary);
@@ -1034,23 +1378,21 @@ const API_BASE = window.PRINCESS_API_BASE ||
 			const serviceTime = $('#service-time');
 			const serviceGuests = $('#service-guests');
 			const serviceStatus = $('#service-booking-status');
+			let slotsTimer = null;
+			let slotsRequest = 0;
 			serviceDate.min = toISO(new Date());
 
 			function loadServiceSlots() {
+				const requestId = ++slotsRequest;
 				if (!serviceDate.value) {
 					serviceTime.innerHTML = '<option value="">' + window.siteText('Elige una fecha primero') + '</option>';
 					return;
 				}
-				serviceTime.innerHTML = '<option value="">Buscando horas…</option>';
+				serviceTime.replaceChildren(new Option(window.siteText('Buscando horas…'), ''));
 				const query = new URLSearchParams({ service: serviceType.value, date: serviceDate.value });
-				fetch(API_BASE + '/api/service-slots?' + query.toString())
-					.then(function (response) {
-						return response.json().then(function (data) {
-							if (!response.ok) throw new Error(data.error || 'No se pudieron consultar las horas.');
-							return data;
-						});
-					})
+				apiFetch('/api/service-slots?' + query.toString(), { anonymous: true })
 					.then(function (data) {
+						if (requestId !== slotsRequest) return;
 						serviceTime.replaceChildren();
 						const suitable = data.slots.filter(function (slot) {
 							return slot.available >= Number(serviceGuests.value || 1);
@@ -1065,6 +1407,7 @@ const API_BASE = window.PRINCESS_API_BASE ||
 						});
 					})
 					.catch(function (error) {
+						if (requestId !== slotsRequest) return;
 						serviceTime.replaceChildren(new Option(window.siteText('No se pudieron cargar las horas'), ''));
 						serviceStatus.textContent = window.siteText(error.message);
 						serviceStatus.className = 'error';
@@ -1074,7 +1417,10 @@ const API_BASE = window.PRINCESS_API_BASE ||
 			window.addEventListener('site-language-change', loadServiceSlots);
 			serviceDate.addEventListener('change', loadServiceSlots);
 			serviceType.addEventListener('change', loadServiceSlots);
-			serviceGuests.addEventListener('input', loadServiceSlots);
+			serviceGuests.addEventListener('input', function () {
+				clearTimeout(slotsTimer);
+				slotsTimer = setTimeout(loadServiceSlots, 350);
+			});
 			serviceForm.addEventListener('submit', function (event) {
 				event.preventDefault();
 				if (!serviceForm.checkValidity()) {
@@ -1083,10 +1429,9 @@ const API_BASE = window.PRINCESS_API_BASE ||
 				}
 				const submitButton = serviceForm.querySelector('[type="submit"]');
 				submitButton.disabled = true;
-				fetch(API_BASE + '/api/service-bookings', {
+				apiFetch('/api/service-bookings', {
 					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({
+					body: {
 						name: serviceForm.elements.name.value.trim(),
 						email: serviceForm.elements.email.value.trim(),
 						service: serviceType.value,
@@ -1094,23 +1439,19 @@ const API_BASE = window.PRINCESS_API_BASE ||
 						time: serviceTime.value,
 						guests: serviceGuests.value,
 						notes: serviceForm.elements.notes.value
-					})
+					}
 				})
-					.then(function (response) {
-						return response.json().then(function (data) {
-							if (!response.ok) throw new Error(data.error || 'No se pudo registrar la cita.');
-							return data;
-						});
-					})
 					.then(function (data) {
-						serviceStatus.textContent = window.siteText(data.message) + ' Referencia: ' + data.reference + '.';
+						serviceStatus.textContent = window.siteText(data.message) + ' ' + window.siteText('Referencia') + ': ' + data.reference + '.';
 						serviceStatus.className = 'ok';
 						serviceForm.reset();
+						prefillAccount();
 						serviceDate.min = toISO(new Date());
 						serviceTime.replaceChildren(new Option(window.siteText('Elige una fecha primero'), ''));
+						window.dispatchEvent(new CustomEvent('princess-bookings-change'));
 					})
 					.catch(function (error) {
-						serviceStatus.textContent = window.siteText(error.message || 'No se pudo conectar con el servidor.');
+						serviceStatus.textContent = window.siteText(error.message);
 						serviceStatus.className = 'error';
 						loadServiceSlots();
 					})
