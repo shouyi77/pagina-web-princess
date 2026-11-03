@@ -1061,3 +1061,85 @@ body { -webkit-tap-highlight-color: transparent; }
 @media (max-width: 700px) {
 	.quickbar { position: absolute; }
 }
+
+/* =====================================================================
+   ESTILOS PERSONALIZADOS DEL TRADUCTOR DE GOOGLE
+   ===================================================================== */
+
+/* 1. Ocultar la barra superior gris y mensajes emergentes de Google */
+body {
+    top: 0 !important;
+}
+.goog-te-banner-frame, 
+.goog-te-balloon-frame,
+#goog-gt-tt {
+    display: none !important;
+}
+.goog-text-highlight {
+    background-color: transparent !important;
+    box-shadow: none !important;
+}
+
+/* 2. Contenedor del selector de idioma */
+.lang-selector-box {
+    display: inline-flex;
+    align-items: center;
+    margin: 0 8px;
+}
+
+/* 3. Estilo elegante de la caja desplegable */
+.goog-te-gadget-simple {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    padding: 6px 12px !important;
+    border-radius: 20px !important; /* Bordes redondeados acordes a las tarjetas */
+    font-family: 'Hanken Grotesk', sans-serif !important;
+    font-size: 0.85rem !important;
+    font-weight: 500 !important;
+    color: #ffffff !important;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+/* Efecto al pasar el cursor (Hover) */
+.goog-te-gadget-simple:hover {
+    background-color: rgba(255, 255, 255, 0.18) !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Estilos para el texto interior */
+.goog-te-gadget-simple span, 
+.goog-te-gadget-simple a {
+    color: #ffffff !important;
+    text-decoration: none !important;
+}
+
+/* Ocultar el icono predeterminado de Google y el divisor */
+.goog-te-gadget-icon,
+.goog-te-gadget-simple span[style*="border-left"] {
+    display: none !important;
+}
+
+/* 4. Estilo de las opciones desplegables (Menú emergente) */
+.goog-te-menu-frame {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2) !important;
+    border-radius: 8px !important;
+}
+
+/* Opciones en el menú desplegable */
+.goog-te-combo {
+    background-color: #12303a !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 6px !important;
+    padding: 4px 8px !important;
+    font-family: 'Hanken Grotesk', sans-serif !important;
+    outline: none;
+    cursor: pointer;
+}
+
+.goog-te-combo option {
+    background-color: #12303a !important;
+    color: #ffffff !important;
+    padding: 6px !important;
+}
