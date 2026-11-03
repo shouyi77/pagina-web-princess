@@ -74,15 +74,20 @@ def chat():
             return jsonify({"respuesta": "No se ha recibido ningún mensaje."}), 400
 
         pregunta_usuario = str(datos.get("mensaje", "")).strip()
+        idioma_detectado = str(datos.get("idioma", "es")).strip()
+
         if not pregunta_usuario:
             return jsonify({"respuesta": "No se ha recibido ningún mensaje."}), 400
+
+        # Construimos la consulta incluyendo la instrucción de idioma
+        consulta_con_idioma = f"[Responder obligatoriamente en el idioma con código ISO: '{idioma_detectado}']\nPregunta: {pregunta_usuario}"
 
         response = None
         for intento in range(3):
             try:
                 response = client.models.generate_content(
-                    model='gemini-3.8-flash',
-                    contents=pregunta_usuario,
+                    model='gemini-1.5-flash', # Nombre estándar de Gemini
+                    contents=consulta_con_idioma,
                     config=types.GenerateContentConfig(
                         system_instruction=CONTEXTO_HOTEL,
                         temperature=0.7,
