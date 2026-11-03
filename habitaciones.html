@@ -15,6 +15,18 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="La Palma Princess">
     <link rel="apple-touch-icon" href="fotos/icon-192.png">
+	<!-- Traductor automático de Google -->
+	<script type="text/javascript">
+		function googleTranslateElementInit() {
+			new google.translate.TranslateElement({
+				pageLanguage: 'es',
+				includedLanguages: 'es,en,de,fr,it', // Añade o quita los idiomas que quieras
+				layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+				autoDisplay: false
+			}, 'google_translate_element');
+		}
+	</script>
+	<script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 </head>
 <body class="inner">
 
@@ -31,6 +43,7 @@
 				<li><a href="reservas.html">Reservas</a></li>
             </ul>
         </nav>
+      
         <label class="language-picker" for="language-select"><span>Idioma</span>
             <select id="language-select" aria-label="Idioma">
                 <option value="es">Español</option>
@@ -38,6 +51,7 @@
                 <option value="de">Deutsch</option>
             </select>
         </label>
+
         <button type="button" class="user-link" id="user-btn" aria-haspopup="dialog" aria-label="Usuario">
             <span class="user-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24">
