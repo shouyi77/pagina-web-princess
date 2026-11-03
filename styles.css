@@ -987,3 +987,41 @@ body { -webkit-tap-highlight-color: transparent; }
 @media (max-width: 700px) {
 	.quickbar { position: absolute; }
 }
+
+/* =====================================================================
+   ESTILOS DEL TRADUCTOR AUTOMÁTICO DE GOOGLE
+   ===================================================================== */
+
+/* Ocultar la barra superior que añade Google */
+body {
+    top: 0 !important;
+}
+.goog-te-banner-frame {
+    display: none !important;
+}
+
+/* Integración limpia en la cabecera */
+.lang-selector-box {
+    display: inline-block;
+    margin: 0 10px;
+    vertical-align: middle;
+}
+
+.goog-te-gadget-simple {
+    background-color: transparent !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    padding: 4px 8px !important;
+    border-radius: 6px !important;
+    font-family: inherit !important;
+    font-size: 0.85rem !important;
+    cursor: pointer;
+}
+
+.goog-te-gadget-simple span, 
+.goog-te-gadget-simple a {
+    color: #ffffff !important;
+}
+
+.goog-te-gadget-icon {
+    display: none !important;
+}
