@@ -1143,3 +1143,37 @@ body {
     color: #ffffff !important;
     padding: 6px !important;
 }
+
+/* =====================================================================
+   ELIMINAR BARRA SUPERIOR DE GOOGLE TRANSLATE
+   ===================================================================== */
+
+/* Ocultar los marcos, banners y herramientas flotantes de Google */
+.goog-te-banner-frame,
+.goog-te-banner,
+.skiptranslate,
+#goog-gt-tt,
+.goog-te-balloon-frame {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    width: 0 !important;
+    opacity: 0 !important;
+}
+
+/* Forzar que el cuerpo de la página se pegue arriba del todo sin margen */
+body {
+    top: 0px !important;
+    position: static !important;
+}
+
+/* Ocultar el marco de la página traducida si fuerza un desplazamiento */
+iframe.goog-te-banner-frame {
+    display: none !important;
+}
+
+/* Evitar resaltado de texto cuando se pasa el cursor */
+.goog-text-highlight {
+    background-color: transparent !important;
+    box-shadow: none !important;
+}
