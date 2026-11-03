@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>La Palma Princess - Habitaciones</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,6 +11,9 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#12303a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="La Palma Princess">
     <link rel="apple-touch-icon" href="fotos/icon-192.png">
 	<!-- Traductor automático de Google -->
 	<script type="text/javascript">
@@ -29,7 +32,7 @@
 
 	<div id="scroll-progress" aria-hidden="true"></div>
     <header id="header">
-        <a href="index.html" class="logo">Hotel Princess La Palma</a>
+        <a href="index.html" class="logo">La Palma Princess</a>
         <button class="menu-toggle" aria-label="Abrir menú" aria-expanded="false" aria-controls="nav">Menú</button>
         <nav id="nav">
             <ul>
@@ -40,16 +43,15 @@
 				<li><a href="reservas.html">Reservas</a></li>
             </ul>
         </nav>
-		<!-- CONTENEDOR DEL TRADUCTOR AUTOMÁTICO -->
-		<div id="google_translate_element" class="lang-selector-box"></div>
+      
+        <label class="language-picker" for="language-select"><span>Idioma</span>
+            <select id="language-select" aria-label="Idioma">
+                <option value="es">Español</option>
+                <option value="en">English</option>
+                <option value="de">Deutsch</option>
+            </select>
+        </label>
 
-		<button type="button" class="user-link" id="user-btn" aria-haspopup="dialog" aria-label="Usuario">
-			<span class="user-icon" aria-hidden="true">
-				<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="currentColor"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"/></svg>
-			</span>
-			<span class="user-text" id="user-label">Usuario</span>
-		</button>
-	</header>
         <button type="button" class="user-link" id="user-btn" aria-haspopup="dialog" aria-label="Usuario">
             <span class="user-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24">
@@ -138,6 +140,7 @@
                         <input id="nl-email" type="email" placeholder="tu@email.com" required>
                         <button type="submit" class="btn btn-small">Suscribirme</button>
                     </div>
+                    <label class="newsletter-consent"><input id="nl-consent" type="checkbox" required> Acepto recibir comunicaciones comerciales por email.</label>
                     <p id="nl-status" role="status" aria-live="polite"></p>
                 </form>
             </div>
@@ -256,6 +259,7 @@
 		<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5l-7 7h4v7h6v-7h4z" fill="currentColor"/></svg>
 	</button>
 	
+    <script src="i18n.js"></script>
     <script src="script.js"></script>
 
 	

@@ -8,12 +8,13 @@
 	--white: #fbfdfc;
 	--serif: "Fraunces", Georgia, serif;
 	--sans: "Hanken Grotesk", system-ui, sans-serif;
-	--header-h: 64px;
+	--header-h: calc(64px + env(safe-area-inset-top, 0px));
 }
 
 /* ---------- Base ---------- */
 *, *::before, *::after { box-sizing: border-box; }
 html { scroll-behavior: smooth; scroll-padding-top: calc(var(--header-h) + var(--bar-h)); }
+html { overflow-x: clip; }
 body { margin: 0; font: 400 1.0625rem/1.65 var(--sans); color: var(--ink); background: var(--white); }
 h1, h2, h3 { font-family: var(--serif); font-weight: 600; line-height: 1.15; margin: 0 0 .5em; }
 h1 { font-size: clamp(2.6rem, 7vw, 5rem); }
@@ -35,7 +36,7 @@ a { color: inherit; }
 /* ---------- Cabecera ---------- */
 #header {
 	position: fixed; inset: 0 0 auto 0; height: var(--header-h); z-index: 20;
-	display: flex; align-items: center; justify-content: space-between; padding: 0 5vw;
+	display: flex; align-items: center; justify-content: space-between; 	padding: env(safe-area-inset-top, 0px) 5vw 0;
 	color: var(--white); transition: background .3s, box-shadow .3s;
 	background: var(--ink);
 }
@@ -77,6 +78,9 @@ a { color: inherit; }
 	min-height: 100vh; display: flex; align-items: flex-end; padding: 0 5vw 12vh; color: var(--white);
 	background: var(--ink);
 }
+@supports (min-height: 100svh) {
+	.hero { min-height: 100svh; }
+}
 /* Capa oscura sobre las imágenes */
 .hero::before {
 	content: ""; position: absolute; inset: 0; z-index: 1;
@@ -115,6 +119,33 @@ body { overflow-x: hidden; }
 /* ---------- Habitaciones ---------- */
 .rooms { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 2rem; }
 .price { font-weight: 700; color: var(--sea); }
+
+.booking-management {
+	max-width: 900px; margin: 4rem auto 0; padding: 2rem;
+	border: 1px solid rgba(18, 48, 58, .2); border-radius: 12px; background: var(--white);
+}
+.booking-management h2 { font-size: 1.8rem; }
+.manage-actions { display: flex; flex-wrap: wrap; gap: .75rem; }
+.manage-cancel { border-color: #b3261e; color: #b3261e; }
+#manage-status.error, #service-booking-status.error { color: #b3261e; }
+#manage-status.ok, #service-booking-status.ok { color: #216b4b; font-weight: 700; }
+#booking-manage-link { display: inline-block; margin: 0 0 .75rem; font-weight: 700; }
+.summary-note.availability-ok { color: #216b4b; font-weight: 700; }
+.summary-note.availability-error { color: #b3261e; font-weight: 700; }
+
+.excursion-filters { display: flex; flex-wrap: wrap; align-items: end; gap: .75rem; margin-bottom: 2rem; }
+.excursion-filters label { display: grid; gap: .25rem; }
+.excursion-filters select { min-width: 10rem; padding: .5rem .7rem; }
+.excursion-filter { border: 1px solid var(--sea); border-radius: 999px; padding: .5rem 1rem; background: transparent; color: var(--ink); font: inherit; cursor: pointer; }
+.excursion-filter.active, .excursion-filter:hover { background: var(--sea); color: var(--white); }
+.excursion-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.25rem; }
+.excursion-card { padding: 1.5rem; border: 1px solid rgba(18, 48, 58, .18); border-radius: 10px; background: var(--white); }
+.excursion-card[hidden] { display: none; }
+.excursion-card h3 { margin-top: .5rem; }
+.excursion-card p { margin-bottom: 1rem; }
+.excursion-card a { color: #216b74; font-weight: 700; }
+.excursion-meta { color: #405b62; font-size: .9rem; font-weight: 700; }
+.excursion-disclaimer { margin: 1.5rem 0 0; font-size: .9rem; color: #405b62; }
 
 /* ---------- Servicios ---------- */
 .services { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 2.5rem; }
@@ -303,6 +334,8 @@ input.invalid { border-color: #b3261e; }
 .nl-row { display: flex; gap: .5rem; }
 .nl-row input { flex: 1; min-width: 0; height: 44px; padding: 0 .9em; border: 0; border-radius: 6px; background: var(--white); color: var(--ink); }
 .nl-row .btn { white-space: nowrap; }
+.newsletter-consent { display: flex !important; align-items: flex-start; gap: .5rem; margin-top: .65rem; font-size: .82rem; font-weight: 400 !important; }
+.newsletter-consent input { flex: 0 0 auto; margin: .2rem 0 0; accent-color: var(--sun); }
 #nl-status { margin: .6rem 0 0; min-height: 1.5em; font-weight: 700; }
 #nl-status.error { color: #ffb4ab; }
 #nl-status.ok { color: var(--sun); }
@@ -335,7 +368,7 @@ input.invalid { border-color: #b3261e; }
 .cookie-banner {
 	position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
 	display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem 2rem;
-	padding: 1.2rem 5vw; background: var(--ink); color: var(--white);
+	padding: 1.2rem 5vw calc(1.2rem + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--white);
 	border-top: 3px solid var(--sun); box-shadow: 0 -6px 24px rgba(0, 0, 0, .3);
 	transform: translateY(100%); transition: transform .4s ease;
 }
@@ -365,6 +398,15 @@ input.invalid { border-color: #b3261e; }
 	color: inherit; font: inherit; cursor: pointer;
 	transition: background .25s, color .25s, transform .25s;
 }
+.language-picker {
+	order: 1; display: inline-flex; align-items: center; gap: .4rem; margin-left: 1rem;
+	color: inherit; font-size: .85rem;
+}
+.language-picker select {
+	max-width: 6rem; padding: .35rem .5rem; border: 1px solid rgba(255,255,255,.4);
+	background: var(--ink); color: var(--white); font: inherit;
+}
+.language-picker :focus-visible { outline-color: var(--sun); }
 .user-icon { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--sun); color: var(--ink); }
 .user-icon svg { width: 20px; height: 20px; }
 .user-link:active { transform: scale(.96); }
@@ -373,7 +415,15 @@ input.invalid { border-color: #b3261e; }
 }
 @media (max-width: 520px) {
 	.user-text { display: none; }
-	.user-link { padding: .25em; }
+	#header { gap: .45rem; padding-left: max(1rem, env(safe-area-inset-left, 0px)); padding-right: max(1rem, env(safe-area-inset-right, 0px)); }
+	#header .logo { min-width: 0; overflow: hidden; font-size: clamp(1rem, 4.2vw, 1.2rem); text-overflow: ellipsis; white-space: nowrap; }
+	.user-link { flex: 0 0 auto; margin-left: 0; padding: .1em; }
+	.language-picker { flex: 0 0 auto; margin-left: 0; }
+	.language-picker span { display: none; }
+	.language-picker select { max-width: 3.75rem; padding-inline: .15rem; }
+	.user-icon { width: 32px; height: 32px; }
+	.user-icon svg { width: 18px; height: 18px; }
+	.menu-toggle { flex: 0 0 auto; margin-left: 0; padding: .35rem .5rem; font-size: .95rem; }
 }
 .menu-toggle { order: 3; margin-left: .8rem; }
 
@@ -914,7 +964,7 @@ a.weather:hover {
 
 /* ---------- Chatbot ---------- */
 .chatbot-floating-btn {
-	position: fixed; right: 1.2rem; bottom: 5rem; z-index: 36;
+	position: fixed; right: 1.2rem; bottom: calc(5rem + env(safe-area-inset-bottom, 0px)); z-index: 36;
 	padding: .7em 1.2em; border: 0; border-radius: 999px;
 	background: var(--sun); color: var(--ink); font: 700 1rem var(--sans);
 	cursor: pointer; box-shadow: 0 4px 14px rgba(0, 0, 0, .3);
@@ -925,7 +975,7 @@ a.weather:hover {
 }
 
 .chatbot-box {
-	position: fixed; right: 1.2rem; bottom: 9rem; z-index: 36;
+	position: fixed; right: 1.2rem; bottom: calc(9rem + env(safe-area-inset-bottom, 0px)); z-index: 36;
 	width: 340px; max-width: calc(100vw - 2.4rem);
 	height: 460px; max-height: 70vh;
 	display: flex; flex-direction: column;
@@ -968,13 +1018,37 @@ a.weather:hover {
 body { -webkit-tap-highlight-color: transparent; }
 
 .install-btn {
-	position: fixed; left: 1.2rem; bottom: 5rem; z-index: 35;
+	position: fixed; left: calc(1.2rem + env(safe-area-inset-left, 0px)); bottom: calc(5rem + env(safe-area-inset-bottom, 0px)); z-index: 35;
 	height: 44px; padding: 0 1.1rem; border: 0; border-radius: 999px;
 	background: var(--sun); color: var(--ink); font: 700 .95rem var(--sans);
 	cursor: pointer; box-shadow: 0 4px 14px rgba(0, 0, 0, .3);
 }
 .install-btn[hidden] { display: none; }
 @media (display-mode: standalone) { .install-btn { display: none; } }
+
+.install-dialog {
+	width: min(440px, calc(100vw - 2rem)); max-width: none; max-height: min(80vh, 36rem);
+	padding: 1.5rem; border: 0; border-radius: 18px;
+	background: var(--white); color: var(--ink);
+	box-shadow: 0 20px 60px rgba(0, 0, 0, .35);
+}
+@supports (max-height: 80dvh) {
+	.install-dialog { max-height: min(80dvh, 36rem); }
+}
+.install-dialog::backdrop { background: rgba(8, 20, 25, .7); }
+.install-dialog h2 { font-size: 1.65rem; }
+.install-dialog p { margin-bottom: .75rem; }
+.install-dialog ol { padding-left: 1.5rem; }
+.install-dialog li { padding-left: .2rem; margin-bottom: .6rem; }
+.install-dialog-close { min-height: 44px; padding: .6rem 1rem; border: 0; border-radius: 999px; background: var(--ink); color: var(--white); font: 700 1rem var(--sans); cursor: pointer; }
+.install-dialog[open] { animation: modal-in .2s ease-out; }
+@media (max-width: 520px) {
+	.install-dialog {
+		position: fixed; inset: auto .5rem calc(1rem + env(safe-area-inset-bottom, 0px));
+		margin-inline: auto; padding: 1.25rem;
+	}
+	.install-btn { bottom: calc(10rem + env(safe-area-inset-bottom, 0px)); }
+}
 
 /* Zonas táctiles de al menos 44 px (móvil y iPad) */
 @media (pointer: coarse) {
@@ -989,39 +1063,116 @@ body { -webkit-tap-highlight-color: transparent; }
 }
 
 /* =====================================================================
-   ESTILOS DEL TRADUCTOR AUTOMÁTICO DE GOOGLE
+   ESTILOS PERSONALIZADOS DEL TRADUCTOR DE GOOGLE
    ===================================================================== */
 
-/* Ocultar la barra superior que añade Google */
+/* 1. Ocultar la barra superior gris y mensajes emergentes de Google */
 body {
     top: 0 !important;
 }
-.goog-te-banner-frame {
+.goog-te-banner-frame, 
+.goog-te-balloon-frame,
+#goog-gt-tt {
     display: none !important;
 }
-
-/* Integración limpia en la cabecera */
-.lang-selector-box {
-    display: inline-block;
-    margin: 0 10px;
-    vertical-align: middle;
-}
-
-.goog-te-gadget-simple {
+.goog-text-highlight {
     background-color: transparent !important;
-    border: 1px solid rgba(255, 255, 255, 0.3) !important;
-    padding: 4px 8px !important;
-    border-radius: 6px !important;
-    font-family: inherit !important;
-    font-size: 0.85rem !important;
-    cursor: pointer;
+    box-shadow: none !important;
 }
 
+/* 2. Contenedor del selector de idioma */
+.lang-selector-box {
+    display: inline-flex;
+    align-items: center;
+    margin: 0 8px;
+}
+
+/* 3. Estilo elegante de la caja desplegable */
+.goog-te-gadget-simple {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    padding: 6px 12px !important;
+    border-radius: 20px !important; /* Bordes redondeados acordes a las tarjetas */
+    font-family: 'Hanken Grotesk', sans-serif !important;
+    font-size: 0.85rem !important;
+    font-weight: 500 !important;
+    color: #ffffff !important;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+/* Efecto al pasar el cursor (Hover) */
+.goog-te-gadget-simple:hover {
+    background-color: rgba(255, 255, 255, 0.18) !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Estilos para el texto interior */
 .goog-te-gadget-simple span, 
 .goog-te-gadget-simple a {
     color: #ffffff !important;
+    text-decoration: none !important;
 }
 
-.goog-te-gadget-icon {
+/* Ocultar el icono predeterminado de Google y el divisor */
+.goog-te-gadget-icon,
+.goog-te-gadget-simple span[style*="border-left"] {
     display: none !important;
 }
+
+/* 4. Estilo de las opciones desplegables (Menú emergente) */
+.goog-te-menu-frame {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2) !important;
+    border-radius: 8px !important;
+}
+
+/* Opciones en el menú desplegable */
+.goog-te-combo {
+    background-color: #12303a !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 6px !important;
+    padding: 4px 8px !important;
+    font-family: 'Hanken Grotesk', sans-serif !important;
+    outline: none;
+    cursor: pointer;
+}
+
+.goog-te-combo option {
+    background-color: #12303a !important;
+    color: #ffffff !important;
+    padding: 6px !important;
+}
+
+/* =====================================================================
+   ELIMINAR BARRA SUPERIOR DE GOOGLE TRANSLATE
+   ===================================================================== */
+
+/* Ocultar los marcos, banners y herramientas flotantes de Google */
+.goog-te-banner-frame,
+.goog-te-banner,
+.skiptranslate,
+#goog-gt-tt,
+.goog-te-balloon-frame {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    width: 0 !important;
+    opacity: 0 !important;
+}
+
+/* Forzar que el cuerpo de la página se pegue arriba del todo sin margen */
+body {
+    top: 0px !important;
+    position: static !important;
+}
+
+/* Ocultar el marco de la página traducida si fuerza un desplazamiento */
+iframe.goog-te-banner-frame {
+    display: none !important;
+}
+
+/* Evitar resaltado de texto cuando se pasa el cursor */
+.goog-text-highlight {
+    background-color: transparent !important;
+    box-shadow: none !important;

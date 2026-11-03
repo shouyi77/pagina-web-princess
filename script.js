@@ -1,3 +1,8 @@
+const API_BASE = window.PRINCESS_API_BASE ||
+	((location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+		? 'http://127.0.0.1:5000'
+		: 'https://asistente-princess.onrender.com');
+
 (function () {
 	'use strict';
 
@@ -120,6 +125,7 @@
 	toggle.addEventListener('click', function () {
 		const open = nav.classList.toggle('open');
 		toggle.setAttribute('aria-expanded', open);
+		toggle.setAttribute('aria-label', window.siteText(open ? 'Cerrar menú' : 'Abrir menú'));
 	});
 
 	/* ---- Enlace activo según la página actual ---- */
@@ -218,18 +224,21 @@
 		const status = $('#form-status');
 		const checkin = $('#checkin');
 		const checkout = $('#checkout');
-		const today = new Date().toISOString().split('T')[0];
+		const today = toISO(new Date());
 		checkin.min = today;
-		checkout.min = today;
-		checkin.addEventListener('change', function () { checkout.min = checkin.value || today; });
+		checkout.min = addDays(today, 1);
+		checkin.addEventListener('change', function () {
+			checkout.min = addDays(checkin.value || today, 1);
+			if (!checkout.value || checkout.value <= checkin.value) checkout.value = checkout.min;
+		});
 
 		const setStatus = function (msg, type) { status.textContent = msg; status.className = type; };
 
 		form.addEventListener('submit', function (e) {
 			e.preventDefault();
 			let valid = true;
-			form.querySelectorAll('[required]').forEach(function (input) {
-				const ok = input.value.trim() !== '' && input.checkValidity();
+			form.querySelectorAll('input, select, textarea').forEach(function (input) {
+				const ok = !input.willValidate || input.checkValidity();
 				input.classList.toggle('invalid', !ok);
 				if (!ok) valid = false;
 			});
@@ -239,10 +248,122 @@
 				setStatus('La fecha de salida debe ser posterior a la de entrada.', 'error');
 				return;
 			}
-			// Aquí conectarías con tu backend o servicio de reservas (fetch/POST).
-			setStatus('Solicitud enviada. Te escribiremos en menos de 24 horas.', 'ok');
-			form.reset();
+			const submitButton = form.querySelector('[type="submit"]');
+			submitButton.disabled = true;
+			setStatus('Comprobando disponibilidad…', '');
+			fetch(API_BASE + '/api/bookings', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					name: form.elements.name.value.trim(),
+					email: form.elements.email.value.trim(),
+					checkin: checkin.value,
+					checkout: checkout.value,
+					room: form.elements.room.value,
+					rooms: form.elements.rooms.value,
+					adults: form.elements.adults.value,
+					children: form.elements.children.value,
+					promo: form.elements.promo.value,
+					resident: form.elements.resident.checked,
+					message: form.elements.message.value
+				})
+			})
+				.then(function (response) {
+					return response.json().then(function (data) {
+						if (!response.ok) throw new Error(data.error || 'No se pudo registrar la reserva.');
+						return data;
+					});
+				})
+				.then(function (data) {
+					form.reset();
+					const manageUrl = new URL('reservas.html', location.href);
+					manageUrl.searchParams.set('manage', data.management_token);
+					setStatus(window.siteText(data.message) + ' Referencia: ' + data.reference + '.', 'ok');
+					const manageLink = $('#booking-manage-link');
+					manageLink.href = manageUrl.href;
+					manageLink.textContent = 'Abrir gestión de la reserva';
+					manageLink.hidden = false;
+				})
+				.catch(function (error) {
+					setStatus(window.siteText(error.message || 'No se pudo conectar con el servidor. Inténtalo de nuevo.'), 'error');
+				})
+				.then(function () { submitButton.disabled = false; });
 		});
+	}
+
+	/* ---- Gestión segura de reservas ---- */
+	const manageForm = $('#manage-booking-form');
+	if (manageForm) {
+		const tokenInput = $('#manage-token');
+		const manageStatus = $('#manage-status');
+		const setManageStatus = function (message, type) {
+			manageStatus.textContent = message;
+			manageStatus.className = type;
+		};
+		const tokenFromUrl = new URLSearchParams(location.search).get('manage');
+		if (tokenFromUrl) tokenInput.value = tokenFromUrl;
+
+		function loadManagedBooking() {
+			const token = tokenInput.value.trim();
+			if (!token) {
+				setManageStatus('Introduce el código seguro recibido en el correo.', 'error');
+				return Promise.resolve();
+			}
+			return fetch(API_BASE + '/api/bookings/' + encodeURIComponent(token))
+				.then(function (response) {
+					return response.json().then(function (data) {
+						if (!response.ok) throw new Error(data.error || 'No se encontró la reserva.');
+						return data;
+					});
+				})
+				.then(function (booking) {
+					manageForm.elements.checkin.value = booking.checkin;
+					manageForm.elements.checkout.value = booking.checkout;
+					manageForm.elements.room.value = booking.room;
+					manageForm.elements.rooms.value = booking.rooms;
+					setManageStatus(window.siteText('Reserva') + ' ' + booking.reference + ': ' +
+						window.siteText(booking.status) + '. ' + window.siteText('Total orientativo: ') +
+						new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(booking.total), 'ok');
+				})
+				.catch(function (error) { setManageStatus(window.siteText(error.message), 'error'); });
+		}
+
+		$('#load-booking').addEventListener('click', loadManagedBooking);
+		manageForm.addEventListener('submit', function (event) {
+			event.preventDefault();
+			fetch(API_BASE + '/api/bookings/' + encodeURIComponent(tokenInput.value.trim()), {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					checkin: manageForm.elements.checkin.value,
+					checkout: manageForm.elements.checkout.value,
+					room: manageForm.elements.room.value,
+					rooms: manageForm.elements.rooms.value
+				})
+			})
+				.then(function (response) {
+					return response.json().then(function (data) {
+						if (!response.ok) throw new Error(data.error || 'No se pudo actualizar la reserva.');
+						return data;
+					});
+				})
+				.then(function (data) { setManageStatus(window.siteText(data.message) + ' Nuevo total orientativo: ' +
+					new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(data.total), 'ok'); })
+				.catch(function (error) { setManageStatus(window.siteText(error.message), 'error'); });
+		});
+		$('#cancel-booking').addEventListener('click', function () {
+			if (!tokenInput.value.trim() || !window.confirm('¿Quieres cancelar esta reserva?')) return;
+			fetch(API_BASE + '/api/bookings/' + encodeURIComponent(tokenInput.value.trim()) + '/cancel', { method: 'POST' })
+				.then(function (response) {
+					return response.json().then(function (data) {
+						if (!response.ok) throw new Error(data.error || 'No se pudo cancelar la reserva.');
+						return data;
+					});
+				})
+				.then(function (data) { setManageStatus(window.siteText(data.message), 'ok'); })
+				.catch(function (error) { setManageStatus(error.message, 'error'); });
+		});
+		if (tokenFromUrl) loadManagedBooking();
 	}
 
 	/* ---- Barra de reserva fija ---- */
@@ -289,6 +410,8 @@
 	/* ---- Persistencia de datos de reserva en toda la web ----
 	   (CORREGIDO: antes estaba fuera de la función y no veía qbIn, qbOut ni $) */
 	const STORAGE_KEY = 'princess_booking_data';
+	let savedQuickbarState = null;
+	let guestRooms = null;
 
 	function saveQuickbarState() {
 		if (!qbIn || !qbOut) return;
@@ -298,6 +421,9 @@
 			adults: $('#qb-adults') ? $('#qb-adults').value : '2',
 			children: $('#qb-children') ? $('#qb-children').value : '0',
 			rooms: $('#qb-rooms') ? $('#qb-rooms').value : '1',
+			guestRooms: guestRooms ? guestRooms.map(function (room) {
+				return { adults: room.adults, children: room.children };
+			}) : undefined,
 			promo: $('input[name="promo"]') ? $('input[name="promo"]').value : '',
 			resident: $('input[name="resident"]') ? $('input[name="resident"]').checked : false
 		};
@@ -311,16 +437,22 @@
 			const raw = sessionStorage.getItem(STORAGE_KEY);
 			if (!raw) return;
 			const data = JSON.parse(raw);
+			if (!data || typeof data !== 'object') return;
+			savedQuickbarState = data;
 
-			if (qbIn && data.checkin) qbIn.value = data.checkin;
-			if (qbOut && data.checkout) qbOut.value = data.checkout;
+			if (qbIn && /^\d{4}-\d{2}-\d{2}$/.test(data.checkin || '') && data.checkin >= toISO(new Date())) {
+				qbIn.value = data.checkin;
+			}
+			if (qbOut && /^\d{4}-\d{2}-\d{2}$/.test(data.checkout || '') && data.checkout > qbIn.value) {
+				qbOut.value = data.checkout;
+			}
 			if (qbIn && qbOut) qbOut.min = addDays(qbIn.value, 1);
 
 			const promoInput = $('input[name="promo"]');
 			if (promoInput && data.promo) promoInput.value = data.promo;
 
 			const resInput = $('input[name="resident"]');
-			if (resInput && data.resident !== undefined) resInput.checked = data.resident;
+			if (resInput && data.resident !== undefined) resInput.checked = Boolean(data.resident);
 		} catch (e) {}
 	}
 
@@ -339,9 +471,36 @@
 		const list = $('#rooms-list');
 		const addBtn = $('#add-room');
 		const MAX_ROOMS = 4, MAX_ADULTS = 4, MAX_CHILDREN = 3;
-		const rooms = [{ adults: 2, children: 0 }];
+		function validGuestRoom(room) {
+			return room && Number.isInteger(room.adults) && room.adults >= 1 && room.adults <= MAX_ADULTS &&
+				Number.isInteger(room.children) && room.children >= 0 && room.children <= MAX_CHILDREN;
+		}
+		function initialGuestRooms() {
+			if (savedQuickbarState && Array.isArray(savedQuickbarState.guestRooms)) {
+				const stored = savedQuickbarState.guestRooms.slice(0, MAX_ROOMS);
+				if (stored.length && stored.every(validGuestRoom)) return stored;
+			}
 
-		function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
+			const totalRooms = Math.min(MAX_ROOMS, Math.max(1, parseInt(savedQuickbarState && savedQuickbarState.rooms, 10) || 1));
+			const totalAdults = Math.min(MAX_ADULTS * MAX_ROOMS, Math.max(totalRooms, parseInt(savedQuickbarState && savedQuickbarState.adults, 10) || 2));
+			const totalChildren = Math.min(MAX_CHILDREN * MAX_ROOMS, Math.max(0, parseInt(savedQuickbarState && savedQuickbarState.children, 10) || 0));
+			const roomCount = Math.min(MAX_ROOMS, Math.max(totalRooms, Math.ceil(totalAdults / MAX_ADULTS), Math.ceil(totalChildren / MAX_CHILDREN)));
+			const restored = Array.from({ length: roomCount }, function () {
+				return { adults: 1, children: 0 };
+			});
+			for (let i = restored.length; i < totalAdults; i++) {
+				const room = restored.find(function (item) { return item.adults < MAX_ADULTS; });
+				if (room) room.adults++;
+			}
+			for (let i = 0; i < totalChildren; i++) {
+				const room = restored.find(function (item) { return item.children < MAX_CHILDREN; });
+				if (room) room.children++;
+			}
+			return restored;
+		}
+		guestRooms = initialGuestRooms();
+
+		function plural(n, one, many) { return n + ' ' + window.siteText(n === 1 ? one : many); }
 
 		function stepper(label, hint, key, i, value, min, max) {
 			const base = ' data-i="' + i + '" data-key="' + key + '"';
@@ -354,20 +513,21 @@
 		}
 
 		function render() {
-			list.innerHTML = rooms.map(function (room, i) {
+			list.innerHTML = guestRooms.map(function (room, i) {
 				return '<div class="room-block"><div class="room-title"><strong>Habitación ' + (i + 1) + '</strong>' +
 					(i > 0 ? '<button type="button" class="remove-room" data-i="' + i + '">Quitar</button>' : '') + '</div>' +
 					stepper('Adultos', 'Desde 12 años', 'adults', i, room.adults, 1, MAX_ADULTS) +
 					stepper('Niños', 'Hasta 11 años', 'children', i, room.children, 0, MAX_CHILDREN) + '</div>';
 			}).join('');
 
-			const adults = rooms.reduce(function (s, r) { return s + r.adults; }, 0);
-			const children = rooms.reduce(function (s, r) { return s + r.children; }, 0);
-			guestsBtn.textContent = plural(adults, 'adulto', 'adultos') + ', ' + plural(children, 'niño', 'niños') + ', ' + rooms.length + ' hab.';
+			const adults = guestRooms.reduce(function (s, r) { return s + r.adults; }, 0);
+			const children = guestRooms.reduce(function (s, r) { return s + r.children; }, 0);
+			guestsBtn.textContent = plural(adults, 'adulto', 'adultos') + ', ' + plural(children, 'niño', 'niños') + ', ' + guestRooms.length + ' ' + window.siteText('hab.');
 			$('#qb-adults').value = adults;
 			$('#qb-children').value = children;
-			$('#qb-rooms').value = rooms.length;
-			addBtn.disabled = rooms.length >= MAX_ROOMS;
+			$('#qb-rooms').value = guestRooms.length;
+			addBtn.disabled = guestRooms.length >= MAX_ROOMS;
+			saveQuickbarState();
 		}
 
 		function stepSelector(i, key, d) {
@@ -378,10 +538,10 @@
 			const step = e.target.closest('.step');
 			const remove = e.target.closest('.remove-room');
 			if (step) {
-				const i = step.dataset.i, key = step.dataset.key, d = Number(step.dataset.d);
+				const i = Number(step.dataset.i), key = step.dataset.key, d = Number(step.dataset.d);
 				const max = key === 'adults' ? MAX_ADULTS : MAX_CHILDREN;
 				const min = key === 'adults' ? 1 : 0;
-				rooms[i][key] = Math.min(max, Math.max(min, rooms[i][key] + d));
+				guestRooms[i][key] = Math.min(max, Math.max(min, guestRooms[i][key] + d));
 				render();
 				// Devuelve el foco al botón pulsado (o a su opuesto si quedó desactivado)
 				const same = list.querySelector(stepSelector(i, key, d));
@@ -389,14 +549,14 @@
 				const target = same && !same.disabled ? same : other;
 				if (target) target.focus();
 			} else if (remove) {
-				rooms.splice(Number(remove.dataset.i), 1);
+				guestRooms.splice(Number(remove.dataset.i), 1);
 				render();
 			}
 		});
 
 		addBtn.addEventListener('click', function () {
-			if (rooms.length < MAX_ROOMS) {
-				rooms.push({ adults: 2, children: 0 });
+			if (guestRooms.length < MAX_ROOMS) {
+				guestRooms.push({ adults: 2, children: 0 });
 				render();
 			}
 		});
@@ -425,9 +585,17 @@
 
 		['checkin', 'checkout', 'adults', 'children', 'rooms', 'promo'].forEach(function (name) {
 			const field = form.elements[name];
-			if (field && params.get(name)) field.value = params.get(name);
+			if (field && params.has(name)) field.value = params.get(name);
+			else if (field && savedQuickbarState && savedQuickbarState[name] !== undefined) field.value = savedQuickbarState[name];
 		});
-		if (params.get('resident') === '1' && form.elements.resident) form.elements.resident.checked = true;
+		if (form.elements.resident) {
+			form.elements.resident.checked = params.has('resident')
+				? params.get('resident') === '1'
+				: Boolean(savedQuickbarState && savedQuickbarState.resident);
+		}
+		if (checkin && checkout) {
+			checkout.min = addDays(checkin.value || toISO(new Date()), 1);
+		}
 	}
 
 	/* ---- Código promocional: solo 6 dígitos ---- */
@@ -444,15 +612,36 @@
 		const nlStatus = $('#nl-status');
 		newsletter.addEventListener('submit', function (e) {
 			e.preventDefault();
-			if (!nlEmail.value.trim() || !nlEmail.checkValidity()) {
-				nlStatus.textContent = 'Escribe un email válido.';
+			const consent = $('#nl-consent');
+			if (!newsletter.checkValidity() || !nlEmail.value.trim() || !consent.checked) {
+				newsletter.reportValidity();
+				nlStatus.textContent = 'Escribe un email válido y acepta recibir comunicaciones.';
 				nlStatus.className = 'error';
 				return;
 			}
-			// Aquí conectarías con tu servicio de newsletter (fetch/POST).
-			nlStatus.textContent = 'Listo, te hemos suscrito.';
-			nlStatus.className = 'ok';
-			newsletter.reset();
+			const submitButton = newsletter.querySelector('[type="submit"]');
+			submitButton.disabled = true;
+			fetch(API_BASE + '/api/newsletter', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ email: nlEmail.value.trim(), consent: consent.checked })
+			})
+				.then(function (response) {
+					return response.json().then(function (data) {
+						if (!response.ok) throw new Error(data.error || 'No se pudo completar la suscripción.');
+						return data;
+					});
+				})
+				.then(function (data) {
+					nlStatus.textContent = window.siteText(data.message);
+					nlStatus.className = 'ok';
+					newsletter.reset();
+				})
+				.catch(function (error) {
+					nlStatus.textContent = window.siteText(error.message || 'No se pudo conectar con el servidor. Inténtalo de nuevo.');
+					nlStatus.className = 'error';
+				})
+				.then(function () { submitButton.disabled = false; });
 		});
 	}
 
@@ -715,23 +904,30 @@
 		const CHILD = 12;                      // € por noche
 		const RESIDENT_DISC = 0.10;
 		const PROMO_DISC = 0.05;
-		const money = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' });
+		function money() {
+			const locale = document.documentElement.lang === 'de' ? 'de-DE' :
+				(document.documentElement.lang === 'en' ? 'en-GB' : 'es-ES');
+			return new Intl.NumberFormat(locale, { style: 'currency', currency: 'EUR' });
+		}
 
 		function parseISO(iso) {
 			const p = iso.split('-').map(Number);
 			return new Date(p[0], p[1] - 1, p[2]);
 		}
 		function fmtDate(iso) {
-			return parseISO(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+			const locale = document.documentElement.lang === 'de' ? 'de-DE' :
+				(document.documentElement.lang === 'en' ? 'en-GB' : 'es-ES');
+			return parseISO(iso).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' });
 		}
 		function num(name, fallback) {
 			const v = parseInt(form.elements[name].value, 10);
 			return isNaN(v) ? fallback : v;
 		}
 		function line(label, amount, cls) {
-			return '<li' + (cls ? ' class="' + cls + '"' : '') + '><span>' + label + '</span><span>' + money.format(amount) + '</span></li>';
+			return '<li' + (cls ? ' class="' + cls + '"' : '') + '><span>' + label + '</span><span>' + money().format(amount) + '</span></li>';
 		}
 
+		let availabilityRequest = 0;
 		function updateSummary() {
 			const cin = form.elements.checkin.value;
 			const cout = form.elements.checkout.value;
@@ -751,16 +947,16 @@
 			const children = Math.max(0, num('children', 0));
 			const roomSelect = form.elements.room;
 			const price = ROOM_PRICES[roomSelect.selectedIndex] || ROOM_PRICES[0];
-			const nightsTxt = nights + (nights === 1 ? ' noche' : ' noches');
+			const nightsTxt = nights + ' ' + window.siteText(nights === 1 ? 'noche' : 'noches');
 
 			// Datos de la estancia
 			$('#sum-in').textContent = fmtDate(cin);
 			$('#sum-out').textContent = fmtDate(cout);
 			$('#sum-nights').textContent = nights;
-			$('#sum-room').textContent = roomSelect.value;
+			$('#sum-room').textContent = window.siteText(roomSelect.value);
 			$('#sum-rooms').textContent = rooms;
-			$('#sum-guests').textContent = adults + (adults === 1 ? ' adulto' : ' adultos') +
-				(children ? ', ' + children + (children === 1 ? ' niño' : ' niños') : '');
+			$('#sum-guests').textContent = adults + ' ' + window.siteText(adults === 1 ? 'adulto' : 'adultos') +
+				(children ? ', ' + children + ' ' + window.siteText(children === 1 ? 'niño' : 'niños') : '');
 
 			// Cálculo
 			const base = nights * rooms * price;
@@ -769,32 +965,158 @@
 			const childrenCost = children * CHILD * nights;
 			const subtotal = base + extraAdultsCost + childrenCost;
 
-			let html = line(nightsTxt + ' × ' + rooms + (rooms === 1 ? ' hab.' : ' hab.') + ' × ' + money.format(price), base);
-			if (extraAdults) html += line(extraAdults + (extraAdults === 1 ? ' adulto extra' : ' adultos extra'), extraAdultsCost);
-			if (children) html += line(children + (children === 1 ? ' niño' : ' niños'), childrenCost);
+			let html = line(nightsTxt + ' × ' + rooms + ' ' + window.siteText('hab.') + ' × ' + money().format(price), base);
+			if (extraAdults) html += line(extraAdults + ' ' + window.siteText(extraAdults === 1 ? 'adulto extra' : 'adultos extra'), extraAdultsCost);
+			if (children) html += line(children + ' ' + window.siteText(children === 1 ? 'niño' : 'niños'), childrenCost);
 
 			let total = subtotal;
 			if (form.elements.resident.checked) {
 				const d = subtotal * RESIDENT_DISC;
 				total -= d;
-				html += line('Residente (-10 %)', -d, 'discount');
+				html += line(window.siteText('Residente (-10 %)'), -d, 'discount');
 			}
 			if (/^\d{6}$/.test(form.elements.promo.value)) {
 				const d = subtotal * PROMO_DISC;
 				total -= d;
-				html += line('Código promocional (-5 %)', -d, 'discount');
+				html += line(window.siteText('Código promocional (-5 %)'), -d, 'discount');
 			}
 
 			$('#sum-lines').innerHTML = html;
-			$('#sum-total').textContent = money.format(total);
+			$('#sum-total').textContent = money().format(total);
+			const requestId = ++availabilityRequest;
+			const availabilityStatus = $('#availability-status');
+			availabilityStatus.textContent = 'Comprobando disponibilidad…';
+			const query = new URLSearchParams({
+				checkin: cin,
+				checkout: cout,
+				room: roomSelect.value,
+				rooms: String(rooms),
+				adults: String(adults),
+				children: String(children),
+				promo: form.elements.promo.value,
+				resident: form.elements.resident.checked ? '1' : '0'
+			});
+			fetch(API_BASE + '/api/availability?' + query.toString())
+				.then(function (response) {
+					return response.json().then(function (data) {
+						if (!response.ok) throw new Error(data.error || 'No se pudo consultar la disponibilidad.');
+						return data;
+					});
+				})
+				.then(function (data) {
+					if (requestId !== availabilityRequest) return;
+					availabilityStatus.textContent = data.available
+						? window.siteText('Disponible para estas fechas') + ' (' + data.rooms_available + ' ' +
+							window.siteText('habitaciones libres') + '). ' + window.siteText('Precio orientativo de demostración.')
+						: window.siteText('No hay disponibilidad suficiente para esas fechas.');
+					availabilityStatus.className = data.available ? 'availability-ok' : 'availability-error';
+				})
+				.catch(function (error) {
+					if (requestId !== availabilityRequest) return;
+					availabilityStatus.textContent = error.message;
+					availabilityStatus.className = 'availability-error';
+				});
 		}
 
 		form.addEventListener('input', updateSummary);
 		form.addEventListener('change', updateSummary);
 		// form.reset() no dispara "input", así que se recalcula a mano
 		form.addEventListener('reset', function () { setTimeout(updateSummary, 0); });
+		window.addEventListener('site-language-change', updateSummary);
 		updateSummary();
 	}
+
+		/* ---- Reserva de spa, restaurante y actividades ---- */
+		const serviceForm = $('#service-booking-form');
+		if (serviceForm) {
+			const serviceDate = $('#service-date');
+			const serviceType = $('#service-type');
+			const serviceTime = $('#service-time');
+			const serviceGuests = $('#service-guests');
+			const serviceStatus = $('#service-booking-status');
+			serviceDate.min = toISO(new Date());
+
+			function loadServiceSlots() {
+				if (!serviceDate.value) {
+					serviceTime.innerHTML = '<option value="">' + window.siteText('Elige una fecha primero') + '</option>';
+					return;
+				}
+				serviceTime.innerHTML = '<option value="">Buscando horas…</option>';
+				const query = new URLSearchParams({ service: serviceType.value, date: serviceDate.value });
+				fetch(API_BASE + '/api/service-slots?' + query.toString())
+					.then(function (response) {
+						return response.json().then(function (data) {
+							if (!response.ok) throw new Error(data.error || 'No se pudieron consultar las horas.');
+							return data;
+						});
+					})
+					.then(function (data) {
+						serviceTime.replaceChildren();
+						const suitable = data.slots.filter(function (slot) {
+							return slot.available >= Number(serviceGuests.value || 1);
+						});
+						if (!suitable.length) {
+							serviceTime.add(new Option(window.siteText('Sin plazas disponibles'), ''));
+							return;
+						}
+						serviceTime.add(new Option(window.siteText('Selecciona una hora'), ''));
+						suitable.forEach(function (slot) {
+							serviceTime.add(new Option(slot.time + ' (' + slot.available + ' ' + window.siteText('plazas') + ')', slot.time));
+						});
+					})
+					.catch(function (error) {
+						serviceTime.replaceChildren(new Option(window.siteText('No se pudieron cargar las horas'), ''));
+						serviceStatus.textContent = window.siteText(error.message);
+						serviceStatus.className = 'error';
+					});
+			}
+
+			window.addEventListener('site-language-change', loadServiceSlots);
+			serviceDate.addEventListener('change', loadServiceSlots);
+			serviceType.addEventListener('change', loadServiceSlots);
+			serviceGuests.addEventListener('input', loadServiceSlots);
+			serviceForm.addEventListener('submit', function (event) {
+				event.preventDefault();
+				if (!serviceForm.checkValidity()) {
+					serviceForm.reportValidity();
+					return;
+				}
+				const submitButton = serviceForm.querySelector('[type="submit"]');
+				submitButton.disabled = true;
+				fetch(API_BASE + '/api/service-bookings', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						name: serviceForm.elements.name.value.trim(),
+						email: serviceForm.elements.email.value.trim(),
+						service: serviceType.value,
+						date: serviceDate.value,
+						time: serviceTime.value,
+						guests: serviceGuests.value,
+						notes: serviceForm.elements.notes.value
+					})
+				})
+					.then(function (response) {
+						return response.json().then(function (data) {
+							if (!response.ok) throw new Error(data.error || 'No se pudo registrar la cita.');
+							return data;
+						});
+					})
+					.then(function (data) {
+						serviceStatus.textContent = window.siteText(data.message) + ' Referencia: ' + data.reference + '.';
+						serviceStatus.className = 'ok';
+						serviceForm.reset();
+						serviceDate.min = toISO(new Date());
+						serviceTime.replaceChildren(new Option(window.siteText('Elige una fecha primero'), ''));
+					})
+					.catch(function (error) {
+						serviceStatus.textContent = window.siteText(error.message || 'No se pudo conectar con el servidor.');
+						serviceStatus.className = 'error';
+						loadServiceSlots();
+					})
+					.then(function () { submitButton.disabled = false; });
+			});
+		}
 
 		/* ---- Servicios: pestañas con imagen ---- */
 	const svcTabs = $$('.svc-tab');
@@ -841,6 +1163,35 @@
 	/* ---- Año del pie ---- */
 	const year = $('#year');
 	if (year) year.textContent = new Date().getFullYear();
+
+	/* ---- Filtros de excursiones ---- */
+	const excursionList = $('#excursion-list');
+	if (excursionList) {
+		let category = 'all';
+		const duration = $('#excursion-duration');
+		const difficulty = $('#excursion-difficulty');
+		function filterExcursions() {
+			excursionList.querySelectorAll('.excursion-card').forEach(function (card) {
+				const visible = (category === 'all' || card.dataset.category === category) &&
+					(duration.value === 'all' || card.dataset.duration === duration.value) &&
+					(difficulty.value === 'all' || card.dataset.difficulty === difficulty.value);
+				card.hidden = !visible;
+			});
+		}
+		$$('.excursion-filter').forEach(function (button) {
+			button.addEventListener('click', function () {
+				category = button.dataset.filter;
+				$$('.excursion-filter').forEach(function (item) {
+					const active = item === button;
+					item.classList.toggle('active', active);
+					item.setAttribute('aria-pressed', active);
+				});
+				filterExcursions();
+			});
+		});
+		duration.addEventListener('change', filterExcursions);
+		difficulty.addEventListener('change', filterExcursions);
+	}
 })();
 
 
@@ -850,11 +1201,7 @@
 (function () {
 	'use strict';
 
-	// ▼▼▼ PEGA AQUÍ LA URL DE RENDER (termina en /chat). Si no hay servidor, déjalo en '' ▼▼▼
-	const URL_RENDER = 'https://asistente-princess.onrender.com/chat';   // ejemplo: 'https://asistente-princess.onrender.com/chat'
-
-	const esLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-	const API_CHAT = esLocal ? 'http://127.0.0.1:5000/chat' : URL_RENDER;
+	const API_CHAT = API_BASE + '/chat';
 	const TIEMPO_MAX = 30000; // 30 s: Render gratuito puede tardar en "despertar"
 
 	// Plan B: solo usa datos reales del hotel (los mismos que CONTEXTO_HOTEL de servidor.py)
@@ -1015,11 +1362,15 @@
 	const yaInstalada = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
 	if (yaInstalada) return;
 
+	const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+		(navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+	const esAndroid = /android/i.test(navigator.userAgent);
 	const btn = document.createElement('button');
 	btn.type = 'button';
 	btn.className = 'install-btn';
-	btn.textContent = '📲 Instalar app';
-	btn.hidden = true;
+	btn.textContent = window.siteText('Instalar app');
+	btn.setAttribute('aria-haspopup', 'dialog');
+	btn.hidden = !esIOS && !esAndroid;
 	document.body.appendChild(btn);
 
 	let promptInstalar = null;
@@ -1029,25 +1380,69 @@
 		btn.hidden = false;
 	});
 
-	// iPhone/iPad no tienen instalación automática: se muestra la guía manual
-	const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) ||
-		(navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-	if (esIOS) btn.hidden = false;
+	const guide = document.createElement('dialog');
+	guide.className = 'install-dialog';
+	guide.id = 'install-guide';
+	guide.setAttribute('aria-labelledby', 'install-dialog-title');
+	btn.setAttribute('aria-controls', guide.id);
+	const guideTitle = document.createElement('h2');
+	guideTitle.id = 'install-dialog-title';
+	guideTitle.textContent = window.siteText('Instala La Palma Princess');
+	const guideIntro = document.createElement('p');
+	guideIntro.textContent = window.siteText('Agrega esta app a tu pantalla de inicio para abrirla rápidamente.');
+	const guideSteps = document.createElement('ol');
+	const steps = esIOS
+		? [
+			'Abre esta página en Safari.',
+			'Pulsa Compartir y selecciona «Añadir a pantalla de inicio».',
+			'Confirma con «Añadir». Después, abre la app desde tu pantalla de inicio.'
+		]
+		: esAndroid
+			? [
+				'Abre el menú del navegador (⋮) y elige «Instalar app» o «Añadir a pantalla de inicio».',
+				'Confirma la instalación y abre la app desde tu pantalla de inicio.'
+			]
+			: ['Usa la opción «Instalar» o «Añadir a pantalla de inicio» del menú del navegador.'];
+	steps.forEach(function (step) {
+		const item = document.createElement('li');
+		item.textContent = window.siteText(step);
+		guideSteps.appendChild(item);
+	});
+	const closeGuide = document.createElement('button');
+	closeGuide.type = 'button';
+	closeGuide.className = 'install-dialog-close';
+	closeGuide.textContent = window.siteText('Cerrar');
+	guide.append(guideTitle, guideIntro, guideSteps, closeGuide);
+	document.body.appendChild(guide);
+
+	function showInstallGuide() {
+		if (!guide.open) guide.showModal();
+		closeGuide.focus();
+	}
+
+	closeGuide.addEventListener('click', function () { guide.close(); });
+	guide.addEventListener('click', function (event) {
+		if (event.target === guide) guide.close();
+	});
 
 	btn.addEventListener('click', async function () {
 		if (promptInstalar) {
-			promptInstalar.prompt();
-			await promptInstalar.userChoice;
-			promptInstalar = null;
-			btn.hidden = true;
-		} else {
-			alert('Para instalar la app: pulsa Compartir y elige "Añadir a pantalla de inicio".');
+			try {
+				const installPrompt = promptInstalar;
+				promptInstalar = null;
+				await installPrompt.prompt();
+				const choice = await installPrompt.userChoice;
+				if (choice.outcome === 'accepted') btn.hidden = true;
+			} catch (error) {
+				console.warn('No se pudo mostrar la instalación nativa.', error);
+				showInstallGuide();
+			}
+			return;
 		}
+		showInstallGuide();
 	});
 
-	// Evento clave para marketing: cuenta cada instalación real
 	window.addEventListener('appinstalled', function () {
 		btn.hidden = true;
-		console.log('App instalada'); // aquí iría el envío a Google Analytics / Firebase
 	});
 })();
