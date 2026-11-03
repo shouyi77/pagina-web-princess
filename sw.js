@@ -1,6 +1,6 @@
 /* Service Worker - La Palma Princess
    Sube el número de VERSION cada vez que cambies archivos importantes. */
-const VERSION = 'princess-v2';
+const VERSION = 'princess-v3';
 
 // Archivos que se guardan al instalar la app (deben existir todos, si no falla la instalación)
 const PRECACHE = [
@@ -12,6 +12,7 @@ const PRECACHE = [
   'reservas.html',
   'styles.css',
   'script.js',
+  'i18n.js',
   'manifest.json',
   'fotos/unnamed.webp'
 ];

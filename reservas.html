@@ -10,7 +10,7 @@
 	<link rel="icon" href="fotos/unnamed.webp">
 	<link rel="stylesheet" href="styles.css">
 	<link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="##12303a">
+    <meta name="theme-color" content="#12303a">
     <link rel="apple-touch-icon" href="fotos/icon-192.png">
 </head>
 <body class="inner">
@@ -28,6 +28,13 @@
 				<li><a href="reservas.html">Reservas</a></li>
 			</ul>
 		</nav>
+		<label class="language-picker" for="language-select"><span>Idioma</span>
+			<select id="language-select" aria-label="Idioma">
+				<option value="es">Español</option>
+				<option value="en">English</option>
+				<option value="de">Deutsch</option>
+			</select>
+		</label>
         <button type="button" class="user-link" id="user-btn" aria-haspopup="dialog" aria-label="Usuario">
 			<span class="user-icon" aria-hidden="true">
 				<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="currentColor"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"/></svg>
@@ -60,7 +67,7 @@
 	<main>
 		<section class="page-hero">
 			<h1>Reserva tu estancia</h1>
-			<p>Te respondemos por email en menos de 24 horas.</p>
+			<p>Consulta disponibilidad, registra tu estancia y recibe una confirmación con los datos de gestión.</p>
 		</section>
  
 		<section class="section section-sand">
@@ -76,9 +83,9 @@
 				<div class="field">
 					<label for="room">Tipo de habitación</label>
 					<select id="room" name="room">
-						<option>Estándar</option>
-						<option>Familiar Superior</option>
-						<option>Ocean Suite</option>
+						<option value="Estándar">Estándar</option>
+						<option value="Familiar Superior">Familiar Superior</option>
+						<option value="Ocean Suite">Ocean Suite</option>
 					</select>
 				</div>
 				<div class="field"><label for="rooms">Habitaciones</label><input id="rooms" name="rooms" type="number" min="1" max="4" value="1"></div>
@@ -89,6 +96,7 @@
 				<div class="field full"><label for="message">Comentarios</label><textarea id="message" name="message" rows="4"></textarea></div>
 				<div class="field full">
 					<p id="form-status" role="status" aria-live="polite"></p>
+					<a id="booking-manage-link" hidden></a>
 					<button type="submit" class="btn">Enviar solicitud</button>
 				</div>
 			</form>
@@ -111,11 +119,51 @@
 					<p class="sum-total"><span>Total</span><strong id="sum-total"></strong></p>
 				</div>
  
-				<p class="summary-note">Precio orientativo, sin valor contractual. Tarifas inventadas para este proyecto educativo.</p>
+				<p class="summary-note">Precio de demostración, sin valor contractual. Consulta disponibilidad real con el hotel.</p>
+				<p id="availability-status" class="summary-note" role="status" aria-live="polite"></p>
 			</aside>
  
 			</div>
 			<!-- ▲ NUEVO: cierra booking-layout ▲ -->
+
+			<section class="booking-management" aria-labelledby="manage-booking-title">
+				<h2 id="manage-booking-title">Gestionar una reserva</h2>
+				<p>Usa el enlace seguro recibido en tu correo o pega aquí tu código de gestión.</p>
+				<form id="manage-booking-form" class="booking">
+					<div class="field full">
+						<label for="manage-token">Código de gestión</label>
+						<input id="manage-token" name="token" autocomplete="off" required>
+					</div>
+					<div class="field">
+						<label for="manage-checkin">Entrada</label>
+						<input id="manage-checkin" name="checkin" type="date" required>
+					</div>
+					<div class="field">
+						<label for="manage-checkout">Salida</label>
+						<input id="manage-checkout" name="checkout" type="date" required>
+					</div>
+					<div class="field">
+						<label for="manage-room">Tipo de habitación</label>
+						<select id="manage-room" name="room">
+							<option value="Estándar">Estándar</option>
+							<option value="Familiar Superior">Familiar Superior</option>
+							<option value="Ocean Suite">Ocean Suite</option>
+						</select>
+					</div>
+					<div class="field">
+						<label for="manage-rooms">Habitaciones</label>
+						<input id="manage-rooms" name="rooms" type="number" min="1" max="4" value="1" required>
+					</div>
+					<div class="field full">
+						<p id="manage-status" role="status" aria-live="polite"></p>
+						<div class="manage-actions">
+							<button type="button" class="btn btn-small" id="load-booking">Consultar reserva</button>
+							<button type="submit" class="btn btn-small" id="update-booking">Guardar cambios</button>
+							<button type="button" class="btn btn-small btn-outline manage-cancel" id="cancel-booking">Cancelar reserva</button>
+						</div>
+					</div>
+				</form>
+			</section>
  
 		</section>
 	</main>
@@ -129,13 +177,14 @@
         <div class="footer-grid">
             <div class="footer-col footer-brand">
                 <a href="index.html" class="logo">Hotel Princess La Palma</a>
-                <p>Un hotel pequeño a cinco minutos de la playa, con desayuno en la terraza, piscina y spa.</p>
+                <p>Hotel de 4 estrellas en Fuencaliente, con siete piscinas, spa y una zona solo adultos.</p>
                 <form class="newsletter" id="newsletter" novalidate>
                     <label for="nl-email">Recibe nuestras ofertas por email</label>
                     <div class="nl-row">
                         <input id="nl-email" type="email" placeholder="tu@email.com" required>
                         <button type="submit" class="btn btn-small">Suscribirme</button>
                     </div>
+                    <label class="newsletter-consent"><input id="nl-consent" type="checkbox" required> Acepto recibir comunicaciones comerciales por email.</label>
                     <p id="nl-status" role="status" aria-live="polite"></p>
                 </form>
             </div>
@@ -240,6 +289,7 @@
 		<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5l-7 7h4v7h6v-7h4z" fill="currentColor"/></svg>
 	</button>
 	
+	<script src="i18n.js"></script>
 	<script src="script.js"></script>
 	
 </body>

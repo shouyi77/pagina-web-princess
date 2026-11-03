@@ -57,6 +57,13 @@
 				<li><a href="reservas.html">Reservas</a></li>
 			</ul>
 		</nav>
+		<label class="language-picker" for="language-select"><span>Idioma</span>
+			<select id="language-select" aria-label="Idioma">
+				<option value="es">Español</option>
+				<option value="en">English</option>
+				<option value="de">Deutsch</option>
+			</select>
+		</label>
 
 		<!-- Botón de usuario -->
 		<button type="button" class="user-link" id="user-btn" aria-haspopup="dialog" aria-label="Usuario">
@@ -166,6 +173,74 @@
 			<a href="reservas.html" class="btn">Reservar ahora</a>
 		</section>
 
+		<section class="section excursions" id="excursiones">
+			<header class="section-head">
+				<h2>Explora La Palma</h2>
+				<p>Ideas para descubrir la isla. Comprueba condiciones, accesos y avisos antes de salir.</p>
+			</header>
+			<div class="excursion-filters" role="group" aria-label="Filtrar excursiones">
+				<button type="button" class="excursion-filter active" data-filter="all" aria-pressed="true">Todas</button>
+				<button type="button" class="excursion-filter" data-filter="nature" aria-pressed="false">Naturaleza</button>
+				<button type="button" class="excursion-filter" data-filter="volcano" aria-pressed="false">Volcanes</button>
+				<button type="button" class="excursion-filter" data-filter="culture" aria-pressed="false">Cultura y costa</button>
+				<label>Duración
+					<select id="excursion-duration">
+						<option value="all">Cualquiera</option>
+						<option value="short">Hasta 2 horas</option>
+						<option value="medium">2-4 horas</option>
+						<option value="long">Más de 4 horas</option>
+					</select>
+				</label>
+				<label>Dificultad
+					<select id="excursion-difficulty">
+						<option value="all">Cualquiera</option>
+						<option value="easy">Baja</option>
+						<option value="medium">Media</option>
+						<option value="hard">Alta</option>
+					</select>
+				</label>
+			</div>
+			<div class="excursion-grid" id="excursion-list">
+				<article class="excursion-card" data-category="volcano" data-duration="medium" data-difficulty="medium">
+					<span class="excursion-meta">Volcanes · 2-3 h · Media</span>
+					<h3>Ruta de los Volcanes</h3>
+					<p>Un recorrido por paisajes volcánicos del sur de la isla. Elige el tramo según tu experiencia y consulta avisos de senderos.</p>
+					<a href="https://www.google.com/maps/search/?api=1&query=Ruta+de+los+Volcanes+La+Palma" target="_blank" rel="noopener">Ver ubicación ↗</a>
+				</article>
+				<article class="excursion-card" data-category="nature" data-duration="medium" data-difficulty="medium">
+					<span class="excursion-meta">Naturaleza · 2-4 h · Media</span>
+					<h3>Los Tilos</h3>
+					<p>Senderos entre laurisilva y barrancos verdes en el noreste de La Palma. La duración varía según la ruta elegida.</p>
+					<a href="https://www.google.com/maps/search/?api=1&query=Centro+de+Visitantes+Los+Tilos+La+Palma" target="_blank" rel="noopener">Ver ubicación ↗</a>
+				</article>
+				<article class="excursion-card" data-category="nature" data-duration="long" data-difficulty="hard">
+					<span class="excursion-meta">Naturaleza · 3-5 h · Alta</span>
+					<h3>Roque de los Muchachos</h3>
+					<p>Miradores de altura y vistas sobre la isla. Consulta el estado de la carretera y las condiciones meteorológicas.</p>
+					<a href="https://www.google.com/maps/search/?api=1&query=Roque+de+los+Muchachos+La+Palma" target="_blank" rel="noopener">Ver ubicación ↗</a>
+				</article>
+				<article class="excursion-card" data-category="volcano" data-duration="short" data-difficulty="easy">
+					<span class="excursion-meta">Volcanes · 1-2 h · Baja</span>
+					<h3>Volcán de San Antonio</h3>
+					<p>Centro de visitantes y sendero junto al cráter, cerca de Fuencaliente. Revisa horarios y accesibilidad antes de la visita.</p>
+					<a href="https://www.google.com/maps/search/?api=1&query=Centro+de+Visitantes+Volcan+San+Antonio+La+Palma" target="_blank" rel="noopener">Ver ubicación ↗</a>
+				</article>
+				<article class="excursion-card" data-category="culture" data-duration="medium" data-difficulty="easy">
+					<span class="excursion-meta">Cultura y costa · 1-3 h · Baja</span>
+					<h3>Salinas de Fuencaliente</h3>
+					<p>Un paseo por el paisaje costero del sur, con salinas y vistas al faro. Ideal para combinar con una parada en el entorno.</p>
+					<a href="https://www.google.com/maps/search/?api=1&query=Salinas+de+Fuencaliente+La+Palma" target="_blank" rel="noopener">Ver ubicación ↗</a>
+				</article>
+				<article class="excursion-card" data-category="culture" data-duration="medium" data-difficulty="easy">
+					<span class="excursion-meta">Cultura y costa · 2-4 h · Baja</span>
+					<h3>Santa Cruz de La Palma</h3>
+					<p>Casco histórico, arquitectura tradicional y paseo marítimo en la capital de la isla.</p>
+					<a href="https://www.google.com/maps/search/?api=1&query=Santa+Cruz+de+La+Palma" target="_blank" rel="noopener">Ver ubicación ↗</a>
+				</article>
+			</div>
+			<p class="excursion-disclaimer">Tiempos y dificultad orientativos. No son actividades organizadas ni guiadas por el hotel.</p>
+		</section>
+
 		<!-- ───────────── Ubicación: mapa y tiempo ───────────── -->
 		<section class="section" id="ubicacion">
 			<header class="section-head">
@@ -218,6 +293,7 @@
 						<input id="nl-email" type="email" placeholder="tu@email.com" required>
 						<button type="submit" class="btn btn-small">Suscribirme</button>
 					</div>
+					<label class="newsletter-consent"><input id="nl-consent" type="checkbox" required> Acepto recibir comunicaciones comerciales por email.</label>
 					<p id="nl-status" role="status" aria-live="polite"></p>
 				</form>
 			</div>
@@ -341,6 +417,7 @@
 
 	<!-- ═══════════════════════ SCRIPTS ═══════════════════════ -->
 	<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+	<script src="i18n.js"></script>
 	<script src="script.js"></script>
 
 </body>

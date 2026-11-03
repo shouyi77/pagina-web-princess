@@ -29,6 +29,13 @@
 				<li><a href="reservas.html">Reservas</a></li>
 			</ul>
 		</nav>
+		<label class="language-picker" for="language-select"><span>Idioma</span>
+			<select id="language-select" aria-label="Idioma">
+				<option value="es">Español</option>
+				<option value="en">English</option>
+				<option value="de">Deutsch</option>
+			</select>
+		</label>
         <button type="button" class="user-link" id="user-btn" aria-haspopup="dialog" aria-label="Usuario">
 			<span class="user-icon" aria-hidden="true">
 				<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="currentColor"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"/></svg>
@@ -144,6 +151,7 @@
                         <input id="nl-email" type="email" placeholder="tu@email.com" required>
                         <button type="submit" class="btn btn-small">Suscribirme</button>
                     </div>
+                    <label class="newsletter-consent"><input id="nl-consent" type="checkbox" required> Acepto recibir comunicaciones comerciales por email.</label>
                     <p id="nl-status" role="status" aria-live="polite"></p>
                 </form>
             </div>
@@ -254,6 +262,7 @@
 		<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5l-7 7h4v7h6v-7h4z" fill="currentColor"/></svg>
 	</button>
 	
+	<script src="i18n.js"></script>
 	<script src="script.js"></script>
 	
 </body>

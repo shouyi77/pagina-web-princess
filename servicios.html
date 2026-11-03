@@ -10,7 +10,7 @@
 	<link rel="icon" href="fotos/unnamed.webp">
 	<link rel="stylesheet" href="styles.css">
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="##12303a">
+    <meta name="theme-color" content="#12303a">
     <link rel="apple-touch-icon" href="fotos/icon-192.png">
 </head>
 <body class="inner">
@@ -28,6 +28,13 @@
 				<li><a href="reservas.html">Reservas</a></li>
 			</ul>
 		</nav>
+		<label class="language-picker" for="language-select"><span>Idioma</span>
+			<select id="language-select" aria-label="Idioma">
+				<option value="es">Español</option>
+				<option value="en">English</option>
+				<option value="de">Deutsch</option>
+			</select>
+		</label>
         <button type="button" class="user-link" id="user-btn" aria-haspopup="dialog" aria-label="Usuario">
 			<span class="user-icon" aria-hidden="true">
 				<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="currentColor"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"/></svg>
@@ -224,6 +231,36 @@
             </div>
         </section>
  
+        <section class="section" id="reservar-servicio">
+            <header class="section-head">
+                <h2>Reserva una actividad</h2>
+                <p>Solicita una plaza para el spa, los restaurantes o las actividades. Las tarifas se confirman al llegar al hotel.</p>
+            </header>
+            <form id="service-booking-form" class="booking">
+                <div class="field"><label for="service-name">Nombre</label><input id="service-name" name="name" autocomplete="name" required></div>
+                <div class="field"><label for="service-email">Email</label><input id="service-email" name="email" type="email" autocomplete="email" required></div>
+                <div class="field">
+                    <label for="service-type">Servicio</label>
+                    <select id="service-type" name="service" required>
+                        <option value="spa">Aqua Princess Spa</option>
+                        <option value="restaurant">Restaurante</option>
+                        <option value="activity">Actividad</option>
+                    </select>
+                </div>
+                <div class="field"><label for="service-date">Fecha</label><input id="service-date" name="date" type="date" required></div>
+                <div class="field">
+                    <label for="service-time">Hora disponible</label>
+                    <select id="service-time" name="time" required><option value="">Elige una fecha primero</option></select>
+                </div>
+                <div class="field"><label for="service-guests">Asistentes</label><input id="service-guests" name="guests" type="number" min="1" max="12" value="1" required></div>
+                <div class="field full"><label for="service-notes">Comentarios (opcional)</label><textarea id="service-notes" name="notes" rows="3"></textarea></div>
+                <div class="field full">
+                    <p id="service-booking-status" role="status" aria-live="polite"></p>
+                    <button type="submit" class="btn">Solicitar plaza</button>
+                </div>
+            </form>
+        </section>
+
         <!-- ▼ RESUMEN RÁPIDO ▼ -->
         <section class="section">
             <header class="section-head">
@@ -254,13 +291,14 @@
         <div class="footer-grid">
             <div class="footer-col footer-brand">
                 <a href="index.html" class="logo">Hotel Princess La Palma</a>
-                <p>Un hotel pequeño a cinco minutos de la playa, con desayuno en la terraza, piscina y spa.</p>
+                <p>Hotel de 4 estrellas en Fuencaliente, con siete piscinas, spa y una zona solo adultos.</p>
                 <form class="newsletter" id="newsletter" novalidate>
                     <label for="nl-email">Recibe nuestras ofertas por email</label>
                     <div class="nl-row">
                         <input id="nl-email" type="email" placeholder="tu@email.com" required>
                         <button type="submit" class="btn btn-small">Suscribirme</button>
                     </div>
+                    <label class="newsletter-consent"><input id="nl-consent" type="checkbox" required> Acepto recibir comunicaciones comerciales por email.</label>
                     <p id="nl-status" role="status" aria-live="polite"></p>
                 </form>
             </div>
@@ -365,6 +403,7 @@
 		<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5l-7 7h4v7h6v-7h4z" fill="currentColor"/></svg>
 	</button>
 	
+	<script src="i18n.js"></script>
 	<script src="script.js"></script>
 	
 </body>
