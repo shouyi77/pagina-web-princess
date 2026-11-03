@@ -442,6 +442,7 @@ input.invalid { border-color: #b3261e; }
 .modal-box h2 { font-size: 1.7rem; }
 .modal-sub { margin-bottom: 1.2rem; color: #4d5f64; }
 .modal-box form { display: grid; gap: 1rem; }
+.modal-box form[hidden] { display: none; }
 .modal-box .field { gap: .3rem; }
 .modal-box input[type="text"], .modal-box input[type="email"], .modal-box input[type="password"] { height: 44px; }
 .modal-box .field.check label { font-weight: 500; }
@@ -1176,3 +1177,36 @@ iframe.goog-te-banner-frame {
 .goog-text-highlight {
     background-color: transparent !important;
     box-shadow: none !important;
+}
+
+/* ---------- Cuenta: pestañas y "Mis reservas" ---------- */
+.modal-box h3.my-bookings-title { margin: 1.4rem 0 .6rem; font-size: 1.1rem; }
+.modal-box { max-height: calc(100vh - 2.4rem); overflow-y: auto; }
+.auth-tabs { display: flex; gap: .4rem; margin: 1rem 0 1.2rem; padding: .25rem; border-radius: 999px; background: var(--foam); }
+.auth-tabs button {
+	flex: 1; padding: .55em .8em; border: 0; border-radius: 999px; background: transparent;
+	color: var(--ink); font: 700 .95rem var(--sans); cursor: pointer; transition: background .2s, color .2s;
+}
+.auth-tabs button[aria-selected="true"] { background: var(--ink); color: var(--white); }
+.auth-tabs button:focus-visible { outline-offset: 1px; }
+#user-status.ok, #user-logged-msg { color: #216b4b; font-weight: 700; }
+#user-logged-msg, #my-bookings-status { margin: 0 0 .6rem; min-height: 1.2em; }
+#my-bookings-status.error { color: #b3261e; font-weight: 700; }
+#my-bookings-status.ok { color: #216b4b; font-weight: 700; }
+.my-bookings { margin: 0 0 1rem; padding: 0; list-style: none; display: grid; gap: .6rem; max-height: 16rem; overflow-y: auto; }
+.my-bookings li {
+	display: grid; gap: .15rem; padding: .7rem .85rem; border: 1px solid #d6d2c3; border-radius: 8px; background: #faf8f1; font-size: .92rem;
+}
+.my-bookings .mb-title { font-weight: 700; }
+.my-bookings .mb-detail { color: #4d5f64; }
+.my-bookings .mb-state { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.my-bookings .mb-confirmed { color: #216b4b; }
+.my-bookings .mb-cancelled { color: #b3261e; }
+.my-bookings .mb-empty { color: #4d5f64; }
+.my-bookings .mb-cancel {
+	justify-self: start; margin-top: .3rem; padding: .3em .9em; border: 1.5px solid #b3261e; border-radius: 999px;
+	background: transparent; color: #b3261e; font: 700 .85rem var(--sans); cursor: pointer;
+}
+.my-bookings .mb-cancel:hover:not(:disabled) { background: #b3261e; color: var(--white); }
+.my-bookings .mb-cancel:disabled { opacity: .5; cursor: wait; }
+#booking-manage-note { margin-top: .5rem; }
