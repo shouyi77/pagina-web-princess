@@ -939,3 +939,87 @@ def email_reserva():
     if enviar_email(email, "Confirmación de tu reserva - Hotel Princess La Palma", html):
         return jsonify({"mensaje": "Correo enviado"}), 200
     return jsonify({"error": "Falló el envío"}), 500
+
+# -------------------------------------------------------------------
+# RUTAS PARA ENVÍO DE CORREOS (BIENVENIDA Y RESERVA)
+# -------------------------------------------------------------------
+
+@app.route('/api/email-bienvenida', methods=['POST'])
+def email_bienvenida():
+    datos = request.get_json(silent=True) or {}
+    nombre = datos.get('nombre', 'Usuario')
+    email = datos.get('email')
+
+    if not email:
+        return jsonify({"error": "Hace falta un email válido"}), 400
+
+    html = f"""
+    <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f4f6f8;">
+        <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 8px; padding: 30px; border-top: 5px solid #12303a;">
+            <h1 style="color: #12303a; margin-top: 0;">¡Bienvenido/a a La Palma Princess!</h1>
+            <p>Hola <strong>{nombre}</strong>,</p>
+            <p>Gracias por registrarte en nuestra plataforma. Tu cuenta ha sido creada correctamente.</p>
+            <p>Ahora podrás realizar tus reservas de forma más rápida y acceder a ofertas exclusivas para tu estancia en Fuencaliente.</p>
+            <hr style="border: none; border-top: 1px solid #eeeeee; margin: 20px 0;">
+            <p style="font-size: 12px; color: #777;">
+                Si deseas dejar de recibir correos comerciales, puedes 
+                <a href="http://localhost:8000/desuscrito.html?email={email}">desactivar la recepción de nuevos mensajes aquí</a>.
+            </p>
+        </div>
+    </div>
+    """
+    
+    # Intenta enviar el correo vía SMTP si la función de envío está disponible
+    try:
+        enviar_correo_smtp(email, "¡Bienvenido/a a La Palma Princess!", html)
+        return jsonify({"mensaje": "Correo de bienvenida enviado correctamente"}), 200
+    except Exception as e:
+        print(f"Error al enviar email de bienvenida: {e}")
+        return jsonify({"mensaje": "Usuario registrado, pero falló el envío de correo"}), 200
+
+
+@app.route('/api/email-reserva', methods=['POST'])
+def email_reserva():
+    datos = request.get_json(silent=True) or {}
+    nombre = datos.get('nombre', 'Huésped')
+    email = datos.get('email')
+    checkin = datos.get('checkin')
+    checkout = datos.get('checkout')
+    habitacion = datos.get('habitacion')
+    num_habitaciones = datos.get('num_habitaciones', 1)
+    adultos = datos.get('adultos', 1)
+    ninos = datos.get('ninos', 0)
+
+    if not email:
+        return jsonify({"error": "Hace falta un email válido"}), 400
+
+    html = f"""
+    <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f4f6f8;">
+        <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 8px; padding: 30px; border-top: 5px solid #12303a;">
+            <h1 style="color: #12303a; margin-top: 0;">Confirmación de Reserva</h1>
+            <p>Hola <strong>{nombre}</strong>,</p>
+            <p>Hemos recibido tu solicitud de reserva en el <strong>Hotel Princess La Palma</strong>. A continuación detallamos los datos de tu estancia:</p>
+            
+            <table style="width: 100%; border-collapse: collapse; margin: 20px 0; background: #f8fafb; border: 1px solid #e2e8f0;">
+                <tr><td style="padding: 10px; border-bottom: 1px solid #e2e8f0;"><strong>Fecha de entrada:</strong></td><td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">{checkin}</td></tr>
+                <tr><td style="padding: 10px; border-bottom: 1px solid #e2e8f0;"><strong>Fecha de salida:</strong></td><td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">{checkout}</td></tr>
+                <tr><td style="padding: 10px; border-bottom: 1px solid #e2e8f0;"><strong>Tipo de habitación:</strong></td><td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">{habitacion} ({num_habitaciones} hab.)</td></tr>
+                <tr><td style="padding: 10px;"><strong>Huéspedes:</strong></td><td style="padding: 10px;">{adultos} adulto(s), {ninos} niño(s)</td></tr>
+            </table>
+
+            <p>Te responderemos por email en menos de 24 horas para formalizar el proceso.</p>
+            <hr style="border: none; border-top: 1px solid #eeeeee; margin: 20px 0;">
+            <p style="font-size: 12px; color: #777;">
+                Si deseas cancelar tu suscripción o dejar de recibir estos avisos, haz clic en 
+                <a href="http://localhost:8000/desuscrito.html?email={email}">darse de baja</a>.
+            </p>
+        </div>
+    </div>
+    """
+
+    try:
+        enviar_correo_smtp(email, "Confirmación de tu reserva - Hotel Princess La Palma", html)
+        return jsonify({"mensaje": "Correo de reserva enviado correctamente"}), 200
+    except Exception as e:
+        print(f"Error al enviar email de reserva: {e}")
+        return jsonify({"mensaje": "Reserva registrada, pero falló el envío de correo"}), 200
