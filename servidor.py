@@ -957,13 +957,17 @@ def email_bienvenida():
             <hr style="border: none; border-top: 1px solid #eeeeee; margin: 20px 0;">
             <p style="font-size: 12px; color: #777;">
                 Si deseas dejar de recibir correos comerciales, puedes
-                <a href="{PUBLIC_BASE_URL}/desuscrito.html?email={escape(email)}">darte de baja aquí</a>.
+                <a href="{PUBLIC_BASE_URL}/desuscrito.html?email={escape(email)}">darse de baja aquí</a>.
             </p>
         </div>
     </div>
     """
     enviado = send_email(email, "¡Bienvenido/a a La Palma Princess!", html)
-    # El usuario ya está registrado: un fallo de correo no debe romper el registro.
+    
+    # NUEVO: Te envía un aviso a ti como propietario (usa tu variable HOTEL_EMAIL)
+    html_propietario = f"<h1>📢 Nuevo Registro</h1><p>El usuario <b>{nombre}</b> ({email}) se ha dado de alta en la web.</p>"
+    send_email(HOTEL_EMAIL, "📢 Nuevo registro de usuario en la web", html_propietario)
+
     return jsonify({"mensaje": "Correo enviado correctamente" if enviado else "Usuario registrado, pero falló el envío de correo",
                     "email_sent": enviado}), 200
 
@@ -997,7 +1001,7 @@ def email_reserva():
                 <tr><td style="padding: 10px;"><strong>Huéspedes:</strong></td><td style="padding: 10px;">{adultos} adulto(s), {ninos} niño(s)</td></tr>
             </table>
 
-            <p>Te responderemos por email en menos de 24 horas para formalizar el proceso.</p>
+            <p>Te responderemos por email en menos de 24 hours para formalizar el proceso.</p>
             <hr style="border: none; border-top: 1px solid #eeeeee; margin: 20px 0;">
             <p style="font-size: 12px; color: #777;">
                 Si deseas cancelar tu suscripción o dejar de recibir estos avisos, haz clic en
@@ -1007,9 +1011,24 @@ def email_reserva():
     </div>
     """
     enviado = send_email(email, "Confirmación de tu reserva - Hotel Princess La Palma", html)
+    
+    # NUEVO: Te envía un aviso detallado a ti como propietario (usa tu variable HOTEL_EMAIL)
+    html_propietario = f"""
+    <h1>🚨 NUEVA RESERVA EN LA WEB</h1>
+    <p>Un cliente ha completado una solicitud de reserva:</p>
+    <ul>
+        <li><b>Cliente:</b> {nombre} ({email})</li>
+        <li><b>Habitación:</b> {habitacion} ({num_habitaciones} habs.)</li>
+        <li><b>Estancia:</b> del {checkin} al {checkout}</li>
+        <li><b>Huéspedes:</b> {adultos} Adultos, {ninos} Niños</li>
+    </ul>
+    """
+    send_email(HOTEL_EMAIL, "🚨 Nueva Solicitud de Reserva Recibida", html_propietario)
+
     return jsonify({"mensaje": "Correo enviado correctamente" if enviado else "Reserva registrada, pero falló el envío de correo",
                     "email_sent": enviado}), 200
 
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", "5000")), debug=os.getenv("FLASK_DEBUG") == "1")
+
