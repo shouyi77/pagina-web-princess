@@ -590,6 +590,107 @@ def enviar_email_promocional():
     except Exception as e:
         return jsonify({"error": f"Error procesando plantilla: {str(e)}"}), 500
 
+@app.post("/api/bookings")
+def create_booking():
+    data = json_payload()
+
+    if not data:
+        return api_error("Datos no válidos.", 400)
+
+    name = clean_text(data.get("name"), 100)
+    email = clean_text(data.get("email"), 254).lower()
+
+    if not name:
+        return api_error("Nombre obligatorio.", 400)
+
+    if not email_valid(email):
+        return api_error("Email inválido.", 400)
+
+    checkin = valid_date(data.get("checkin"))
+    checkout = valid_date(data.get("checkout"))
+
+    if not checkin or not checkout:
+        return api_error("Fechas inválidas.", 400)
+
+    room = data.get("room")
+
+    if room not in ROOMS:
+        return api_error("Habitación inválida.", 400)
+
+    rooms = parse_integer(data.get("rooms")) or 1
+    adults = parse_integer(data.get("adults")) or 1
+    children = parse_integer(data.get("children")) or 0
+
+    nights = (checkout - checkin).days
+
+    if nights <= 0:
+        return api_error("La fecha de salida debe ser posterior.", 400)
+
+    if not valid_occupancy(room, rooms, adults, children):
+        return api_error("Ocupación no válida.", 400)
+
+    with connect_db() as db:
+
+        disponibles = room_availability(
+            db,
+            room,
+            checkin.isoformat(),
+            checkout.isoformat()
+        )
+
+        if disponibles < rooms:
+            return api_error(
+                "No hay disponibilidad suficiente.",
+                409
+            )
+
+        total = booking_total(
+            room,
+            rooms,
+            adults,
+            children,
+            nights,
+            False,
+            ""
+        )
+
+        reference = "RES-" + secrets.token_hex(4).upper()
+        token = secrets.token_urlsafe(24)
+
+        db.execute("""
+            INSERT INTO bookings (
+                reference,
+                token_hash,
+                name,
+                email,
+                checkin,
+                checkout,
+                room,
+                rooms,
+                adults,
+                children,
+                total
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            reference,
+            hash_token(token),
+            name,
+            email,
+            checkin.isoformat(),
+            checkout.isoformat(),
+            room,
+            rooms,
+            adults,
+            children,
+            total
+        ))
+
+    return jsonify({
+        "reference": reference,
+        "total": total,
+        "message": "Reserva creada"
+    }), 201
 
 @app.route('/api/email-bienvenida', methods=['POST'])
 def email_bienvenida():
