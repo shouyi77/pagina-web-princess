@@ -1538,36 +1538,50 @@ const API_BASE = window.PRINCESS_API_BASE ||
 
 /* =====================================================================
    ASISTENTE VIRTUAL (Gemini en la nube + plan B con palabras clave)
+   Sustituye TODO el bloque (function () { ... })(); del asistente.
    ===================================================================== */
 (function () {
 	'use strict';
 
 	const API_CHAT = API_BASE + '/chat';
-	const TIEMPO_MAX = 30000; // 30 s: Render gratuito puede tardar en "despertar"
+	const API_HEALTH = API_BASE + '/api/health';
+	const TIEMPO_MAX = 60000; // Render gratuito puede tardar casi 1 min en "despertar"
+
+	const MSG_SIN_IA = 'Ahora mismo no puedo conectar con el asistente. Inténtalo de nuevo en unos segundos, ' +
+		'o escríbenos por WhatsApp al 613 48 90 55 o llámanos al +34 922 42 55 11.';
 
 	// Plan B: solo usa datos reales del hotel (los mismos que CONTEXTO_HOTEL de servidor.py)
+	// OJO: el orden importa, gana la primera coincidencia.
 	const BASE_LOCAL = [
 		{ claves: ['hola', 'buenas', 'buenos dias'], texto: '¡Hola! Bienvenido al Hotel Princess La Palma. ¿En qué te puedo ayudar?' },
+		{ claves: ['precio', 'tarifa', 'cuesta', 'cuestan', 'coste', 'costo', 'euros'], texto: 'Precios por habitación y noche: Estándar desde 150 €, Familiar Superior desde 185 € y Ocean Suite desde 250 €. Hay descuento del 10% para residentes y 5% con código promocional. Puedes calcular tu estancia en la sección Reservas.' },
 		{ claves: ['piscina'], texto: 'Tenemos 11 piscinas: 7 en la zona general (con piscina infantil y playa de arena artificial) y 4 en Esencia de La Palma (solo adultos +16), una de ellas climatizada en invierno.' },
 		{ claves: ['spa', 'masaje', 'tratamiento'], texto: 'El Aqua Princess Spa ofrece circuito de aguas, masajes y tratamientos. Conviene reservar con antelación.' },
 		{ claves: ['parking', 'aparcamiento', 'aparcar', 'coche'], texto: 'Sí, el parking es gratuito para huéspedes durante toda la estancia.' },
 		{ claves: ['gimnasio', 'gym'], texto: 'Hay gimnasio con equipamiento de cardio y musculación, para huéspedes.' },
-		{ claves: ['restaurante', 'bufe', 'comer', 'cenar', 'bar'], texto: 'Contamos con restaurantes con bufé, bar piscina, piano bar y un restaurante con menú de degustación.' },
+		{ claves: ['restaurante', 'bufe', 'comer', 'cenar', 'bar', 'bares'], texto: 'Contamos con restaurantes con bufé, bar piscina, piano bar y un restaurante con menú de degustación.' },
 		{ claves: ['adultos', 'esencia'], texto: 'Esencia de La Palma es la zona exclusiva para mayores de 16 años, con cuatro piscinas.' },
 		{ claves: ['nino', 'ninos', 'infantil', 'familia'], texto: 'Tenemos piscina infantil, espacios y actividades para niños, y habitaciones familiares.' },
 		{ claves: ['habitacion', 'suite', 'estandar', 'familiar'], texto: 'Tenemos Estándar (22 m²), Familiar Superior (44 m², dos habitaciones comunicadas) y Ocean Suite (44 m², salón y dormitorio). Mira la sección Habitaciones.' },
-		{ claves: ['reserva', 'reservar', 'precio', 'tarifa', 'cuesta'], texto: 'Puedes reservar en la sección Reservas; respondemos por email en menos de 24 horas. Los precios se consultan al reservar.' },
+		{ claves: ['reserva', 'reservar'], texto: 'Puedes reservar en la sección Reservas; respondemos por email en menos de 24 horas.' },
 		{ claves: ['telefono', 'llamar', 'whatsapp', 'email', 'contacto'], texto: 'Teléfono: +34 922 42 55 11 (lunes a viernes, 09:00-17:00). WhatsApp: 613 48 90 55. Email: hotelPrincessLaPalma@gmail.com.' },
 		{ claves: ['donde', 'direccion', 'llegar', 'ubicacion'], texto: 'Estamos en Carretera de la Costa, Cerca Vieja, 10, 38749 Fuencaliente de La Palma.' }
 	];
 
+	// Palabras cortas (<=4 letras) solo valen enteras ("bar" no debe saltar con "barato");
+	// las largas valen como inicio de palabra ("piscina" -> "piscinas").
+	function coincide(t, clave) {
+		const patron = clave.length <= 4 ? '\\b' + clave + '\\b' : '\\b' + clave;
+		return new RegExp(patron).test(t);
+	}
+
+	// Devuelve el texto del plan B, o null si no hay coincidencia
 	function respuestaLocal(texto) {
 		const t = texto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 		const hit = BASE_LOCAL.find(function (r) {
-			return r.claves.some(function (c) { return t.includes(c); });
+			return r.claves.some(function (c) { return coincide(t, c); });
 		});
-		const aviso = navigator.onLine ? '' : '(Sin conexión) ';
-		return aviso + (hit ? hit.texto : 'No tengo ese dato ahora mismo. Escríbenos por WhatsApp al 613 48 90 55 o llámanos al +34 922 42 55 11.');
+		return hit ? hit.texto : null;
 	}
 
 	// Convierte **negrita** y las listas con guiones que devuelve Gemini (escapando el HTML)
@@ -1576,8 +1590,16 @@ const API_BASE = window.PRINCESS_API_BASE ||
 			.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 			.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
 			.replace(/^\s*[-*] /gm, '• ');
-}
+	}
 
+	// Despierta el servidor de Render (el plan gratis se duerme sin visitas)
+	let servidorDespertado = false;
+	function despertarServidor() {
+		if (servidorDespertado) return;
+		servidorDespertado = true;
+		try { fetch(API_HEALTH).catch(function () {}); } catch (e) { /* nada */ }
+	}
+	despertarServidor();
 
 	/* ---- Interfaz del chat ---- */
 	const chatBtn = document.createElement('button');
@@ -1606,6 +1628,7 @@ const API_BASE = window.PRINCESS_API_BASE ||
 	chatBtn.addEventListener('click', function () {
 		chatBox.hidden = !chatBox.hidden;
 		if (!chatBox.hidden) {
+			despertarServidor();
 			const inputField = document.getElementById('chatbot-input');
 			if (inputField) inputField.focus();
 		}
@@ -1625,8 +1648,12 @@ const API_BASE = window.PRINCESS_API_BASE ||
 		return div;
 	}
 
+	// Idioma actual de la web (ajusta si i18n.js guarda el idioma en otro sitio)
+	function idiomaActual() {
+		return (document.documentElement.lang || 'es').slice(0, 2).toLowerCase();
+	}
+
 	// Pide la respuesta a la IA (con límite de tiempo); si algo falla, se rechaza la promesa
-// Pide la respuesta a la IA (con límite de tiempo); si algo falla, se rechaza la promesa
 	function preguntarIA(texto) {
 		if (!API_CHAT) return Promise.reject(new Error('sin servidor'));
 		const control = new AbortController();
@@ -1634,12 +1661,17 @@ const API_BASE = window.PRINCESS_API_BASE ||
 		return fetch(API_CHAT, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ mensaje: texto }),
+			body: JSON.stringify({ mensaje: texto, idioma: idiomaActual() }),
 			signal: control.signal
 		})
 			.then(function (res) {
 				clearTimeout(temporizador);
-				if (!res.ok) throw new Error('HTTP ' + res.status);
+				if (!res.ok) {
+					// Intentamos leer el código de error que manda el servidor (ia_no_disponible, sin_configurar...)
+					return res.json().catch(function () { return {}; }).then(function (d) {
+						throw new Error('HTTP ' + res.status + (d.error ? ' (' + d.error + ')' : ''));
+					});
+				}
 				return res.json();
 			})
 			.then(function (data) {
@@ -1664,16 +1696,25 @@ const API_BASE = window.PRINCESS_API_BASE ||
 		input.value = '';
 
 		const escribiendo = nuevoMensaje(msgArea, 'msg-bot', 'Escribiendo…');
+		const avisoLento = setTimeout(function () {
+			escribiendo.textContent = 'Escribiendo… (el servidor se está despertando, puede tardar un poco)';
+		}, 8000);
 
 		preguntarIA(text)
 			.then(function (respuesta) {
 				escribiendo.innerHTML = formatear(respuesta);
 			})
 			.catch(function (err) {
+				// Mira este mensaje en la consola (F12): dice POR QUÉ ha fallado la IA
 				console.warn('Asistente en modo local:', err.message);
-				escribiendo.textContent = respuestaLocal(text);
+				const local = respuestaLocal(text);
+				// Si no hay respuesta local NO decimos "no tengo ese dato": decimos que falla la conexión
+				escribiendo.textContent = (navigator.onLine ? '' : '(Sin conexión) ') + (local || MSG_SIN_IA);
 			})
-			.then(function () { msgArea.scrollTop = msgArea.scrollHeight; });
+			.then(function () {
+				clearTimeout(avisoLento);
+				msgArea.scrollTop = msgArea.scrollHeight;
+			});
 	};
 
 	const sendBtn = document.getElementById('chatbot-send-btn');
