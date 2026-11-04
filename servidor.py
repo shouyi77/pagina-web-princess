@@ -803,3 +803,45 @@ def chat():
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", "5000")), debug=os.getenv("FLASK_DEBUG") == "1")
+
+
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
+@app.route('/enviar-email-promocional', methods=['POST'])
+def enviar_email_promocional():
+    datos = request.get_json(silent=True)
+    email_destino = datos.get("email") if datos else None
+
+    if not email_destino:
+        return jsonify({"error": "Hace falta especificar un email"}), 400
+
+    try:
+        # 1. Cargar la plantilla HTML creada
+        with open('email_marketing.html', 'r', encoding='utf-8') as archivo:
+            contenido_html = archivo.read()
+
+        # Reemplazar la variable del email para el enlace de baja
+        contenido_html = contenido_html.replace('{{email}}', email_destino)
+
+        # 2. Configurar el mensaje MIME
+        mensaje = MIMEMultipart("alternative")
+        mensaje["Subject"] = "¡Oferta especial 10% Dto! - Hotel Princess La Palma"
+        mensaje["From"] = "hotelPrincessLaPalma@gmail.com"
+        mensaje["To"] = email_destino
+
+        # Adjuntar versión HTML
+        mensaje.attach(MIMEText(contenido_html, "html"))
+
+        # 3. Enviar correo vía SMTP (ejemplo con Gmail SMTP)
+        # NOTA: Configura tus credenciales SMTP reales en variables de entorno (.env)
+        # servidor_smtp = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+        # servidor_smtp.login("tu_email@gmail.com", "tu_contraseña_de_aplicacion")
+        # servidor_smtp.sendmail("hotelPrincessLaPalma@gmail.com", email_destino, mensaje.as_string())
+        # servidor_smtp.quit()
+
+        return jsonify({"mensaje": f"Correo promocional enviado a {email_destino} correctamente."}), 200
+
+    except Exception as e:
+        return jsonify({"error": f"Error al enviar el correo: {str(e)}"}), 500
