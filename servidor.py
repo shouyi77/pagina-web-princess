@@ -836,10 +836,10 @@ def enviar_email_promocional():
 
         # 3. Enviar correo vía SMTP (ejemplo con Gmail SMTP)
         # NOTA: Configura tus credenciales SMTP reales en variables de entorno (.env)
-        # servidor_smtp = smtplib.SMTP_SSL('smtp.gmail.com', 465)
-        # servidor_smtp.login("tu_email@gmail.com", "tu_contraseña_de_aplicacion")
-        # servidor_smtp.sendmail("hotelPrincessLaPalma@gmail.com", email_destino, mensaje.as_string())
-        # servidor_smtp.quit()
+         servidor_smtp = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+         servidor_smtp.login("hotelprincesslapalmatrabajo@gmail.com", "Hotelprincess")
+         servidor_smtp.sendmail("hotelprincesslapalmatrabajo@gmail.com", email_destino, mensaje.as_string())
+         servidor_smtp.quit()
 
         return jsonify({"mensaje": f"Correo promocional enviado a {email_destino} correctamente."}), 200
 
