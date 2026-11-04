@@ -552,9 +552,25 @@ input.invalid { border-color: #b3261e; }
 
 /* ---------- Mapa + tiempo ---------- */
 .location-grid {
-	display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; align-items: stretch;
+	display: grid; 
+	grid-template-columns: 2fr 1fr 1fr; 
+	gap: 1.5rem; 
+	align-items: stretch;
 }
 .location-grid #mapa { height: 100%; min-height: 420px; }
+
+@media (max-width: 950px) {
+	.location-grid { grid-template-columns: 1fr 1fr; }
+	.location-grid #mapa { grid-column: span 2; min-height: 320px; }
+}
+
+@media (max-width: 700px) {
+	.location-grid { grid-template-columns: 1fr; }
+	.location-grid #mapa { grid-column: auto; min-height: 320px; }
+	.weather { flex-direction: row; justify-content: center; padding: 1rem; gap: 1rem; text-align: left; }
+	.weather-icon { font-size: 2.6rem; }
+	.weather-temp { font-size: 2rem; }
+}
 
 /* ---------- Widget del tiempo ---------- */
 .weather {
