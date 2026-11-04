@@ -24,15 +24,9 @@ load_dotenv()
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024
-ALLOWED_ORIGINS = [
-    "http://localhost:8000",
-    "http://127.0.0.1:8000",
-    "https://shouyi77.github.io",
-    "https://shouyi77.github.io/",
-    "http://shouyi77.github.io"
-]
-CORS(app, resources={r"/api/*": {"origins": ALLOWED_ORIGINS}, r"/chat": {"origins": ALLOWED_ORIGINS}},
-     allow_headers=["Content-Type", "Authorization"])
+
+# CORS total para evitar cualquier tipo de bloqueo con GitHub Pages
+CORS(app)
 
 try:
     from google import genai
@@ -460,7 +454,6 @@ RESERVAS:
 """
 
 
-# ▼▼▼ ENDPOINT DEL CHATBOT CORREGIDO Y CON FALLBACK ▼▼▼
 @app.route('/chat', methods=['POST'])
 def chat():
     try:
@@ -474,11 +467,11 @@ def chat():
         if not pregunta_usuario:
             return jsonify({"respuesta": "No se ha recibido ningún mensaje."}), 400
         if not client:
-            return jsonify({"respuesta": "El asistente virtual no está configurado ahora mismo."}), 503
+            return jsonify({"respuesta": "El asistente virtual no está configurado (falta GEMINI_API_KEY en Render)."}), 503
 
         consulta_con_idioma = f"[Responder obligatoriamente en el idioma con código ISO: '{idioma_detectado}']\nPregunta: {pregunta_usuario}"
 
-        # Prueba los modelos de la lista en orden hasta encontrar uno disponible
+        # Recorre los modelos de respaldo (Gemini 2.5 y 2.0)
         for modelo_nombre in MODELOS_IA:
             try:
                 response = client.models.generate_content(
