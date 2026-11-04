@@ -27,7 +27,9 @@ app.config["MAX_CONTENT_LENGTH"] = 16 * 1024
 ALLOWED_ORIGINS = [
     "http://localhost:8000",
     "http://127.0.0.1:8000",
-    "https://shouyi77.github.io"
+    "https://shouyi77.github.io",
+    "https://shouyi77.github.io/",
+    "http://shouyi77.github.io"
 ]
 CORS(app, resources={r"/api/*": {"origins": ALLOWED_ORIGINS}, r"/chat": {"origins": ALLOWED_ORIGINS}},
      allow_headers=["Content-Type", "Authorization"])
