@@ -235,15 +235,28 @@ def room_availability(db, room, checkin, checkout):
 
 def send_booking_email(email, name, reference, token, checkin, checkout, total):
     management_link = PUBLIC_BASE_URL + "/reservas.html?manage=" + token
-    body = (
-        f"Hola {name}:\n\nHemos registrado tu solicitud de reserva en {HOTEL_NAME}.\n"
-        f"Referencia: {reference}\nEntrada: {checkin}\nSalida: {checkout}\n"
-        f"Total orientativo: {total:.2f} EUR\n\n"
-        f"Puedes consultar o cancelar la solicitud aquí:\n{management_link}\n\n"
-        f"El precio es orientativo. Contacta con el hotel para confirmar las condiciones."
-    )
-    return send_email(email, f"Reserva {reference} - {HOTEL_NAME}", body)
+    body_html = f"""
+    <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f4f6f8;">
+        <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 8px; padding: 30px; border-top: 5px solid #12303a;">
+            <h1 style="color: #12303a; margin-top: 0;">Confirmación de Reserva</h1>
+            <p>Hola <strong>{name}</strong>,</p>
+            <p>Hemos recibido tu solicitud de reserva en el <strong>Hotel Princess La Palma</strong>. A continuación tienes los detalles:</p>
+            
+            <table style="width: 100%; border-collapse: collapse; margin: 20px 0; background: #f8fafb; border: 1px solid #e2e8f0;">
+                <tr><td style="padding: 10px; border-bottom: 1px solid #e2e8f0;"><strong>Referencia:</strong></td><td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">{reference}</td></tr>
+                <tr><td style="padding: 10px; border-bottom: 1px solid #e2e8f0;"><strong>Entrada:</strong></td><td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">{checkin}</td></tr>
+                <tr><td style="padding: 10px; border-bottom: 1px solid #e2e8f0;"><strong>Salida:</strong></td><td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">{checkout}</td></tr>
+                <tr><td style="padding: 10px;"><strong>Total orientativo:</strong></td><td style="padding: 10px;"><strong>{total:.2f} EUR</strong></td></tr>
+            </table>
 
+            <p><a href="{management_link}" style="background-color: #12303a; color: white; padding: 10px 18px; text-decoration: none; border-radius: 4px; display: inline-block;">Gestionar o Cancelar Reserva</a></p>
+
+            <hr style="border: none; border-top: 1px solid #eeeeee; margin: 20px 0;">
+            <p style="font-size: 12px; color: #777;">Si deseas dejar de recibir avisos, haz clic en <a href="{PUBLIC_BASE_URL}/desuscrito.html?email={email}">darse de baja</a>.</p>
+        </div>
+    </div>
+    """
+    return send_email(email, f"Reserva {reference} - {HOTEL_NAME}", body_html)
 
 # ───────────────────────── Cuentas de usuario y sesiones ─────────────────────────
 # El navegador guarda un token aleatorio (en localStorage) y lo envía en la cabecera
@@ -346,8 +359,24 @@ def register():
     except sqlite3.IntegrityError:
         return api_error("Ya existe una cuenta con ese email. Inicia sesión.", 409)
     attempts_add(ip_key)
-    return jsonify({"token": token, "user": {"name": name, "email": email}}), 201
 
+    # ▼▼▼ ENVÍO DE EMAIL DE BIENVENIDA ▼▼▼
+    html_bienvenida = f"""
+    <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f4f6f8;">
+        <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 8px; padding: 30px; border-top: 5px solid #12303a;">
+            <h1 style="color: #12303a; margin-top: 0;">¡Bienvenido/a a La Palma Princess!</h1>
+            <p>Hola <strong>{name}</strong>,</p>
+            <p>Gracias por registrarte. Tu cuenta ha sido creada correctamente.</p>
+            <p>Ahora podrás realizar tus reservas de forma más rápida y acceder a ofertas exclusivas.</p>
+            <hr style="border: none; border-top: 1px solid #eeeeee; margin: 20px 0;">
+            <p style="font-size: 12px; color: #777;">Si deseas darte de baja, haz clic en <a href="{PUBLIC_BASE_URL}/desuscrito.html?email={email}">darse de baja</a>.</p>
+        </div>
+    </div>
+    """
+    send_email(email, "¡Bienvenido/a a La Palma Princess!", html_bienvenida)
+    # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+
+    return jsonify({"token": token, "user": {"name": name, "email": email}}), 201
 
 @app.post("/api/auth/login")
 def login():
