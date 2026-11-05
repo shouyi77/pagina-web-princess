@@ -1107,10 +1107,12 @@ const API_BASE = window.PRINCESS_API_BASE ||
 			closeModal();
 		});
 
-		$('#user-delete-account').addEventListener('click', function () {
+		modal.addEventListener('click', function (e) {
+			const button = e.target.closest('#user-delete-account');
+			if (!button) return;
+
 			if (!window.confirm(window.siteText('¿Estás seguro de que deseas eliminar tu cuenta? Esta acción no se puede deshacer.'))) return;
 
-			const button = this;
 			button.disabled = true;
 
 			apiFetch('/api/auth/delete-account', { method: 'DELETE' })
