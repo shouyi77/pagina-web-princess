@@ -1,33 +1,40 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Suscripción Cancelada - Hotel Princess La Palma</title>
-    <link rel="stylesheet" href="styles.css">
-    <style>
-        body { font-family: sans-serif; text-align: center; padding: 50px 20px; background-color: #f4f6f8; }
-        .card { background: white; padding: 40px; max-width: 500px; margin: 0 auto; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        h1 { color: #12303a; }
-        p { color: #555; }
-        .btn-home { display: inline-block; margin-top: 20px; padding: 10px 20px; background-color: #12303a; color: white; text-decoration: none; border-radius: 4px; }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Darse de baja - La Palma Princess</title>
+  <style>
+    body{font-family:system-ui,sans-serif;max-width:32rem;margin:4rem auto;padding:0 1rem;color:#12303a}
+    button{padding:.7em 1.4em;border:0;border-radius:999px;background:#f2b84b;font:700 1rem system-ui;cursor:pointer}
+  </style>
 </head>
 <body>
-    <div class="card">
-        <h1>Suscripción Cancelada</h1>
-        <p>Tu dirección de correo ha sido dada de baja correctamente de nuestra lista de envíos promocionales.</p>
-        <p>Lamentamos verte partir. Si ha sido un error, siempre puedes volver a suscribirte desde nuestra web.</p>
-        <a href="index.html" class="btn-home">Volver al Inicio</a>
-    </div>
-
-    <script>
-        // Muestra en pantalla el email que se ha dado de baja leyendo la URL (?email=...)
-        const params = new URLSearchParams(window.location.search);
-        const email = params.get('email');
-        if (email) {
-            console.log('Email dado de baja registrado:', email);
-        }
-    </script>
+  <h1>Darse de baja</h1>
+  <p id="texto">Cargando…</p>
+  <button id="confirmar" hidden>Confirmar baja</button>
+  <script>
+    const API = 'https://asistente-princess.onrender.com';
+    const email = new URLSearchParams(location.search).get('email');
+    const texto = document.getElementById('texto');
+    const boton = document.getElementById('confirmar');
+    if (!email) {
+      texto.textContent = 'Falta el email en el enlace.';
+    } else {
+      texto.textContent = '¿Quieres dejar de recibir las novedades en ' + email + '?';
+      boton.hidden = false;
+      boton.addEventListener('click', function () {
+        boton.disabled = true;
+        fetch(API + '/api/newsletter/unsubscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email })
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (d) { texto.textContent = d.message || 'Listo.'; boton.hidden = true; })
+          .catch(function () { texto.textContent = 'No se pudo completar la baja. Inténtalo de nuevo.'; boton.disabled = false; });
+      });
+    }
+  </script>
 </body>
 </html>
