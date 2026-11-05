@@ -867,8 +867,10 @@ const API_BASE = window.PRINCESS_API_BASE ||
 					'<h3 class="my-bookings-title">Mis reservas</h3>' +
 					'<ul class="my-bookings" id="my-bookings"></ul>' +
 					'<p id="my-bookings-status" role="status" aria-live="polite"></p>' +
-					'<button type="button" class="btn" id="user-logout">Cerrar sesión</button>' +
-					'<button type="button" class="btn" id="user-delete-account" style="background:#dc2626; margin-left:8px;">Eliminar cuenta</button>' +
+					'<div class="modal-actions" style="display:flex; flex-direction:column; gap:10px; margin-top:20px;">' +
+    					'<button type="button" class="btn" id="user-logout" style="width:100%;">Cerrar sesión</button>' +
+    					'<button type="button" class="btn" id="user-delete-account" style="background:#dc2626; width:100%;">Eliminar cuenta</button>' +
+					'</div>' +
 				'</div>' +
 			'</div>';
 		document.body.appendChild(modal);
