@@ -513,8 +513,7 @@ const API_BASE = window.PRINCESS_API_BASE ||
 		});
 	}
 
-	/* ---- Persistencia de datos de reserva en toda la web ----
-	   (CORREGIDO: antes estaba fuera de la función y no veía qbIn, qbOut ni $) */
+	/* ---- Persistencia de datos de reserva en toda la web ---- */
 	const STORAGE_KEY = 'princess_booking_data';
 	let savedQuickbarState = null;
 	let guestRooms = null;
@@ -869,6 +868,7 @@ const API_BASE = window.PRINCESS_API_BASE ||
 					'<ul class="my-bookings" id="my-bookings"></ul>' +
 					'<p id="my-bookings-status" role="status" aria-live="polite"></p>' +
 					'<button type="button" class="btn" id="user-logout">Cerrar sesión</button>' +
+					'<button type="button" class="btn" id="user-delete-account" style="background:#dc2626; margin-left:8px;">Eliminar cuenta</button>' +
 				'</div>' +
 			'</div>';
 		document.body.appendChild(modal);
@@ -1105,6 +1105,25 @@ const API_BASE = window.PRINCESS_API_BASE ||
 			closeModal();
 		});
 
+		$('#user-delete-account').addEventListener('click', function () {
+			if (!window.confirm(window.siteText('¿Estás seguro de que deseas eliminar tu cuenta? Esta acción no se puede deshacer.'))) return;
+
+			const button = this;
+			button.disabled = true;
+
+			apiFetch('/api/auth/delete-account', { method: 'DELETE' })
+				.then(function (data) {
+					alert(window.siteText(data.message));
+					Auth.write(null);
+					showTab('login');
+					closeModal();
+				})
+				.catch(function (error) {
+					button.disabled = false;
+					setStatus(error.message, 'error');
+				});
+		});
+
 		/* Al cargar la página: se muestra la sesión guardada y se comprueba que siga siendo válida */
 		refreshUser();
 		const stored = Auth.read();
@@ -1223,7 +1242,7 @@ const API_BASE = window.PRINCESS_API_BASE ||
 			});
 	}
 
-		/* ---- Resumen de precio (reservas.html) ---- */
+	/* ---- Resumen de precio (reservas.html) ---- */
 	const summary = $('#summary');
 	if (form && summary) {
 		const ROOM_PRICES = [150, 185, 250];   // Estándar, Superior, Suite (mismo orden que el <select>)
@@ -1370,96 +1389,96 @@ const API_BASE = window.PRINCESS_API_BASE ||
 		updateSummary();
 	}
 
-		/* ---- Reserva de spa, restaurante y actividades ---- */
-		const serviceForm = $('#service-booking-form');
-		if (serviceForm) {
-			const serviceDate = $('#service-date');
-			const serviceType = $('#service-type');
-			const serviceTime = $('#service-time');
-			const serviceGuests = $('#service-guests');
-			const serviceStatus = $('#service-booking-status');
-			let slotsTimer = null;
-			let slotsRequest = 0;
-			serviceDate.min = toISO(new Date());
+	/* ---- Reserva de spa, restaurante y actividades ---- */
+	const serviceForm = $('#service-booking-form');
+	if (serviceForm) {
+		const serviceDate = $('#service-date');
+		const serviceType = $('#service-type');
+		const serviceTime = $('#service-time');
+		const serviceGuests = $('#service-guests');
+		const serviceStatus = $('#service-booking-status');
+		let slotsTimer = null;
+		let slotsRequest = 0;
+		serviceDate.min = toISO(new Date());
 
-			function loadServiceSlots() {
-				const requestId = ++slotsRequest;
-				if (!serviceDate.value) {
-					serviceTime.innerHTML = '<option value="">' + window.siteText('Elige una fecha primero') + '</option>';
-					return;
-				}
-				serviceTime.replaceChildren(new Option(window.siteText('Buscando horas…'), ''));
-				const query = new URLSearchParams({ service: serviceType.value, date: serviceDate.value });
-				apiFetch('/api/service-slots?' + query.toString(), { anonymous: true })
-					.then(function (data) {
-						if (requestId !== slotsRequest) return;
-						serviceTime.replaceChildren();
-						const suitable = data.slots.filter(function (slot) {
-							return slot.available >= Number(serviceGuests.value || 1);
-						});
-						if (!suitable.length) {
-							serviceTime.add(new Option(window.siteText('Sin plazas disponibles'), ''));
-							return;
-						}
-						serviceTime.add(new Option(window.siteText('Selecciona una hora'), ''));
-						suitable.forEach(function (slot) {
-							serviceTime.add(new Option(slot.time + ' (' + slot.available + ' ' + window.siteText('plazas') + ')', slot.time));
-						});
-					})
-					.catch(function (error) {
-						if (requestId !== slotsRequest) return;
-						serviceTime.replaceChildren(new Option(window.siteText('No se pudieron cargar las horas'), ''));
-						serviceStatus.textContent = window.siteText(error.message);
-						serviceStatus.className = 'error';
-					});
+		function loadServiceSlots() {
+			const requestId = ++slotsRequest;
+			if (!serviceDate.value) {
+				serviceTime.innerHTML = '<option value="">' + window.siteText('Elige una fecha primero') + '</option>';
+				return;
 			}
-
-			window.addEventListener('site-language-change', loadServiceSlots);
-			serviceDate.addEventListener('change', loadServiceSlots);
-			serviceType.addEventListener('change', loadServiceSlots);
-			serviceGuests.addEventListener('input', function () {
-				clearTimeout(slotsTimer);
-				slotsTimer = setTimeout(loadServiceSlots, 350);
-			});
-			serviceForm.addEventListener('submit', function (event) {
-				event.preventDefault();
-				if (!serviceForm.checkValidity()) {
-					serviceForm.reportValidity();
-					return;
-				}
-				const submitButton = serviceForm.querySelector('[type="submit"]');
-				submitButton.disabled = true;
-				apiFetch('/api/service-bookings', {
-					method: 'POST',
-					body: {
-						name: serviceForm.elements.name.value.trim(),
-						email: serviceForm.elements.email.value.trim(),
-						service: serviceType.value,
-						date: serviceDate.value,
-						time: serviceTime.value,
-						guests: serviceGuests.value,
-						notes: serviceForm.elements.notes.value
+			serviceTime.replaceChildren(new Option(window.siteText('Buscando horas…'), ''));
+			const query = new URLSearchParams({ service: serviceType.value, date: serviceDate.value });
+			apiFetch('/api/service-slots?' + query.toString(), { anonymous: true })
+				.then(function (data) {
+					if (requestId !== slotsRequest) return;
+					serviceTime.replaceChildren();
+					const suitable = data.slots.filter(function (slot) {
+						return slot.available >= Number(serviceGuests.value || 1);
+					});
+					if (!suitable.length) {
+						serviceTime.add(new Option(window.siteText('Sin plazas disponibles'), ''));
+						return;
 					}
+					serviceTime.add(new Option(window.siteText('Selecciona una hora'), ''));
+					suitable.forEach(function (slot) {
+						serviceTime.add(new Option(slot.time + ' (' + slot.available + ' ' + window.siteText('plazas') + ')', slot.time));
+					});
 				})
-					.then(function (data) {
-						serviceStatus.textContent = window.siteText(data.message) + ' ' + window.siteText('Referencia') + ': ' + data.reference + '.';
-						serviceStatus.className = 'ok';
-						serviceForm.reset();
-						prefillAccount();
-						serviceDate.min = toISO(new Date());
-						serviceTime.replaceChildren(new Option(window.siteText('Elige una fecha primero'), ''));
-						window.dispatchEvent(new CustomEvent('princess-bookings-change'));
-					})
-					.catch(function (error) {
-						serviceStatus.textContent = window.siteText(error.message);
-						serviceStatus.className = 'error';
-						loadServiceSlots();
-					})
-					.then(function () { submitButton.disabled = false; });
-			});
+				.catch(function (error) {
+					if (requestId !== slotsRequest) return;
+					serviceTime.replaceChildren(new Option(window.siteText('No se pudieron cargar las horas'), ''));
+					serviceStatus.textContent = window.siteText(error.message);
+					serviceStatus.className = 'error';
+				});
 		}
 
-		/* ---- Servicios: pestañas con imagen ---- */
+		window.addEventListener('site-language-change', loadServiceSlots);
+		serviceDate.addEventListener('change', loadServiceSlots);
+		serviceType.addEventListener('change', loadServiceSlots);
+		serviceGuests.addEventListener('input', function () {
+			clearTimeout(slotsTimer);
+			slotsTimer = setTimeout(loadServiceSlots, 350);
+		});
+		serviceForm.addEventListener('submit', function (event) {
+			event.preventDefault();
+			if (!serviceForm.checkValidity()) {
+				serviceForm.reportValidity();
+				return;
+			}
+			const submitButton = serviceForm.querySelector('[type="submit"]');
+			submitButton.disabled = true;
+			apiFetch('/api/service-bookings', {
+				method: 'POST',
+				body: {
+					name: serviceForm.elements.name.value.trim(),
+					email: serviceForm.elements.email.value.trim(),
+					service: serviceType.value,
+					date: serviceDate.value,
+					time: serviceTime.value,
+					guests: serviceGuests.value,
+					notes: serviceForm.elements.notes.value
+				}
+			})
+				.then(function (data) {
+					serviceStatus.textContent = window.siteText(data.message) + ' ' + window.siteText('Referencia') + ': ' + data.reference + '.';
+					serviceStatus.className = 'ok';
+					serviceForm.reset();
+					prefillAccount();
+					serviceDate.min = toISO(new Date());
+					serviceTime.replaceChildren(new Option(window.siteText('Elige una fecha primero'), ''));
+					window.dispatchEvent(new CustomEvent('princess-bookings-change'));
+				})
+				.catch(function (error) {
+					serviceStatus.textContent = window.siteText(error.message);
+					serviceStatus.className = 'error';
+					loadServiceSlots();
+				})
+				.then(function () { submitButton.disabled = false; });
+		});
+	}
+
+	/* ---- Servicios: pestañas con imagen ---- */
 	const svcTabs = $$('.svc-tab');
 	if (svcTabs.length) {
 		const explorer = $('#svc-explorer');
@@ -1538,7 +1557,6 @@ const API_BASE = window.PRINCESS_API_BASE ||
 
 /* =====================================================================
    ASISTENTE VIRTUAL (Gemini en la nube + plan B con palabras clave)
-   Sustituye TODO el bloque (function () { ... })(); del asistente.
    ===================================================================== */
 (function () {
 	'use strict';
@@ -1551,7 +1569,6 @@ const API_BASE = window.PRINCESS_API_BASE ||
 		'o escríbenos por WhatsApp al 613 48 90 55 o llámanos al +34 922 42 55 11.';
 
 	// Plan B: solo usa datos reales del hotel (los mismos que CONTEXTO_HOTEL de servidor.py)
-	// OJO: el orden importa, gana la primera coincidencia.
 	const BASE_LOCAL = [
 		{ claves: ['hola', 'buenas', 'buenos dias'], texto: '¡Hola! Bienvenido al Hotel Princess La Palma. ¿En qué te puedo ayudar?' },
 		{ claves: ['precio', 'tarifa', 'cuesta', 'cuestan', 'coste', 'costo', 'euros'], texto: 'Precios por habitación y noche: Estándar desde 150 €, Familiar Superior desde 185 € y Ocean Suite desde 250 €. Hay descuento del 10% para residentes y 5% con código promocional. Puedes calcular tu estancia en la sección Reservas.' },
@@ -1568,14 +1585,11 @@ const API_BASE = window.PRINCESS_API_BASE ||
 		{ claves: ['donde', 'direccion', 'llegar', 'ubicacion'], texto: 'Estamos en Carretera de la Costa, Cerca Vieja, 10, 38749 Fuencaliente de La Palma.' }
 	];
 
-	// Palabras cortas (<=4 letras) solo valen enteras ("bar" no debe saltar con "barato");
-	// las largas valen como inicio de palabra ("piscina" -> "piscinas").
 	function coincide(t, clave) {
 		const patron = clave.length <= 4 ? '\\b' + clave + '\\b' : '\\b' + clave;
 		return new RegExp(patron).test(t);
 	}
 
-	// Devuelve el texto del plan B, o null si no hay coincidencia
 	function respuestaLocal(texto) {
 		const t = texto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 		const hit = BASE_LOCAL.find(function (r) {
@@ -1584,7 +1598,6 @@ const API_BASE = window.PRINCESS_API_BASE ||
 		return hit ? hit.texto : null;
 	}
 
-	// Convierte **negrita** y las listas con guiones que devuelve Gemini (escapando el HTML)
 	function formatear(texto) {
 		return texto
 			.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -1592,7 +1605,6 @@ const API_BASE = window.PRINCESS_API_BASE ||
 			.replace(/^\s*[-*] /gm, '• ');
 	}
 
-	// Despierta el servidor de Render (el plan gratis se duerme sin visitas)
 	let servidorDespertado = false;
 	function despertarServidor() {
 		if (servidorDespertado) return;
@@ -1648,12 +1660,10 @@ const API_BASE = window.PRINCESS_API_BASE ||
 		return div;
 	}
 
-	// Idioma actual de la web (ajusta si i18n.js guarda el idioma en otro sitio)
 	function idiomaActual() {
 		return (document.documentElement.lang || 'es').slice(0, 2).toLowerCase();
 	}
 
-	// Pide la respuesta a la IA (con límite de tiempo); si algo falla, se rechaza la promesa
 	function preguntarIA(texto) {
 		if (!API_CHAT) return Promise.reject(new Error('sin servidor'));
 		const control = new AbortController();
@@ -1667,7 +1677,6 @@ const API_BASE = window.PRINCESS_API_BASE ||
 			.then(function (res) {
 				clearTimeout(temporizador);
 				if (!res.ok) {
-					// Intentamos leer el código de error que manda el servidor (ia_no_disponible, sin_configurar...)
 					return res.json().catch(function () { return {}; }).then(function (d) {
 						throw new Error('HTTP ' + res.status + (d.error ? ' (' + d.error + ')' : ''));
 					});
@@ -1705,10 +1714,8 @@ const API_BASE = window.PRINCESS_API_BASE ||
 				escribiendo.innerHTML = formatear(respuesta);
 			})
 			.catch(function (err) {
-				// Mira este mensaje en la consola (F12): dice POR QUÉ ha fallado la IA
 				console.warn('Asistente en modo local:', err.message);
 				const local = respuestaLocal(text);
-				// Si no hay respuesta local NO decimos "no tengo ese dato": decimos que falla la conexión
 				escribiendo.textContent = (navigator.onLine ? '' : '(Sin conexión) ') + (local || MSG_SIN_IA);
 			})
 			.then(function () {
