@@ -1107,7 +1107,7 @@ const API_BASE = window.PRINCESS_API_BASE ||
 			closeModal();
 		});
 
-		modal.addEventListener('click', function (e) {
+				modal.addEventListener('click', function (e) {
 			const button = e.target.closest('#user-delete-account');
 			if (!button) return;
 
@@ -1123,8 +1123,10 @@ const API_BASE = window.PRINCESS_API_BASE ||
 					closeModal();
 				})
 				.catch(function (error) {
+					loggedMsg.textContent = window.siteText(error.message);
+				})
+				.finally(function () {
 					button.disabled = false;
-					setStatus(error.message, 'error');
 				});
 		});
 
