@@ -1270,9 +1270,9 @@ def admin_panel():
             "FROM service_bookings ORDER BY id DESC LIMIT 200").fetchall()
         suscriptores = db.execute("SELECT email, created_at FROM subscribers ORDER BY id DESC").fetchall()
         nombres_servicio = {"spa": "Aqua Princess Spa", "gym": "Gimnasio (máquinas)", "pilates": "Pilates",
-                            "solarium": "Solarium", "padel1": "Pádel · Pista 1", "padel2": "Pádel · Pista 2",
-                            "volley": "Arenero de vóley", "cancha": "Cancha de baloncesto y fútbol",
-                            "restaurant": "Restaurante", "activity": "Actividad"}
+                    "solarium": "Solarium", "padel1": "Pádel · Pista 1", "padel2": "Pádel · Pista 2",
+                    "volley": "Arenero de vóley", "cancha": "Cancha de baloncesto y fútbol",
+                    "restaurant": "Restaurante", "activity": "Actividad"}
         servicios = [(*r[:3], nombres_servicio.get(r[3], r[3]), *r[4:]) for r in servicios]
 
         def euros(v):
@@ -1281,8 +1281,9 @@ def admin_panel():
             return f"{v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".").replace(",00", "") + " €"
 
         reservas = [(*r[:7], euros(r[7]), r[8]) for r in reservas]
+
         def stat(numero, etiqueta):
-        return f'<div class="stat"><b>{numero}</b><small>{etiqueta}</small></div>'
+            return f'<div class="stat"><b>{numero}</b><small>{etiqueta}</small></div>'
 
     pagina = (
         '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="robots" content="noindex">'
