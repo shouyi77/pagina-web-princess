@@ -251,7 +251,7 @@
         <section class="section" id="reservar-servicio">
             <header class="section-head">
                 <h2>Reserva una actividad</h2>
-                <p>Solicita una plaza para el spa, los restaurantes o las actividades. Las tarifas se confirman al llegar al hotel.</p>
+                <p>Solicita plaza para spa, gimnasio, pilates, solarium o las pistas deportivas. Las tarifas se confirman al llegar al hotel.</p>
             </header>
             <form id="service-booking-form" class="booking">
                 <div class="field"><label for="service-name">Nombre</label><input id="service-name" name="name" autocomplete="name" required></div>
@@ -259,9 +259,18 @@
                 <div class="field">
                     <label for="service-type">Servicio</label>
                     <select id="service-type" name="service" required>
-                        <option value="spa">Aqua Princess Spa</option>
-                        <option value="restaurant">Restaurante</option>
-                        <option value="activity">Actividad</option>
+                        <optgroup label="Bienestar">
+                            <option value="spa">Aqua Princess Spa</option>
+                            <option value="gym">Gimnasio (máquinas)</option>
+                            <option value="pilates">Pilates</option>
+                            <option value="solarium">Solarium</option>
+                        </optgroup>
+                        <optgroup label="Actividades y deportes">
+                            <option value="padel1">Pádel · Pista 1</option>
+                            <option value="padel2">Pádel · Pista 2</option>
+                            <option value="volley">Arenero de vóley</option>
+                            <option value="cancha">Cancha de baloncesto y fútbol</option>
+                        </optgroup>
                     </select>
                 </div>
                 <div class="field"><label for="service-date">Fecha</label><input id="service-date" name="date" type="date" required></div>

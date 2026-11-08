@@ -68,11 +68,23 @@ ROOMS = {
     "Familiar Superior": {"price": 185, "inventory": 12, "adults": 4, "children": 2, "guests": 6},
     "Ocean Suite": {"price": 250, "inventory": 8, "adults": 3, "children": 2, "guests": 5},
 }
-SERVICES = {"spa", "restaurant", "activity"}
-SERVICE_CAPACITY = {"spa": 8, "restaurant": 24, "activity": 16}
-SERVICE_TIMES = {"spa": ("09:00", "11:00", "13:00", "15:00", "17:00"),
-                 "restaurant": ("13:00", "14:00", "19:00", "20:00", "21:00"),
-                 "activity": ("09:00", "11:00", "15:00", "17:00")}
+def _horas(inicio, fin):
+    return tuple(f"{h:02d}:00" for h in range(inicio, fin + 1))
+
+# id (máx. 20 caracteres): (aforo por franja, horas disponibles)
+_SERVICIOS = {
+    "spa":      (8,  ("09:00", "11:00", "13:00", "15:00", "17:00")),
+    "gym":      (4,  _horas(8, 20)),
+    "pilates":  (12, ("09:30", "18:00")),          # mañana y tarde
+    "solarium": (12, ("10:00", "12:00", "14:00", "16:00")),
+    "padel1":   (4,  _horas(9, 20)),               # 4 jugadores por pista
+    "padel2":   (4,  _horas(9, 20)),
+    "volley":   (12, _horas(10, 19)),
+    "cancha":   (10, _horas(9, 20)),               # baloncesto y fútbol comparten espacio
+}
+SERVICES = set(_SERVICIOS)
+SERVICE_CAPACITY = {k: v[0] for k, v in _SERVICIOS.items()}
+SERVICE_TIMES = {k: v[1] for k, v in _SERVICIOS.items()}
 
 # Modelos de la IA del chatbot. Se pueden cambiar SIN tocar el codigo: en Render -> Environment
 # -> MODELOS_IA (nombres separados por comas, el primero es el preferido).
@@ -893,7 +905,9 @@ def _datos_dinamicos():
         f"- {nombre}: desde {datos['price']} EUR por habitacion y noche."
         for nombre, datos in ROOMS.items()
     )
-    nombres = {"spa": "Spa", "restaurant": "Restaurante", "activity": "Actividades"}
+    nombres = {"spa": "Spa", "gym": "Gimnasio (máquinas)", "pilates": "Pilates",
+               "solarium": "Solarium", "padel1": "Pádel pista 1", "padel2": "Pádel pista 2",
+               "volley": "Arenero de vóley", "cancha": "Cancha de baloncesto y fútbol"}
     horarios = "\n".join(
         f"- {nombres[k]} (reservable en la web): {', '.join(v)}."
         for k, v in SERVICE_TIMES.items()

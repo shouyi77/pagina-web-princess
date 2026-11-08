@@ -885,7 +885,12 @@ const API_BASE = window.PRINCESS_API_BASE ||
 		const loggedMsg = $('#user-logged-msg');
 		const bookingsList = $('#my-bookings');
 		const bookingsStatus = $('#my-bookings-status');
-		const SERVICE_NAMES = { spa: 'Aqua Princess Spa', restaurant: 'Restaurante', activity: 'Actividad' };
+		const SERVICE_NAMES = {
+			gym: 'Gimnasio (máquinas)', spa: 'Aqua Princess Spa', solarium: 'Solarium',
+			padel1: 'Pádel · Pista 1', padel2: 'Pádel · Pista 2', volley: 'Arenero de vóley',
+			cancha: 'Cancha de baloncesto y fútbol', pilates: 'Pilates',
+			restaurant: 'Restaurante', activity: 'Actividad' /* reservas antiguas */
+		};
 		const STATUS_NAMES = { confirmed: 'confirmada', cancelled: 'cancelada' };
 		let opener = null;
 
