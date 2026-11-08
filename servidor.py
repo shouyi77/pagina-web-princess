@@ -1154,13 +1154,86 @@ def email_reserva():
 ADMIN_KEY = os.getenv("ADMIN_KEY", "").strip()
 
 
-def _tabla_html(titulo, cabeceras, filas):
+ADMIN_CSS = """
+:root{--ink:#12303a;--sea:#2f7f86;--foam:#dcebe6;--sand:#efe6d6;--sun:#f2b84b;--white:#fbfdfc;
+--serif:"Fraunces",Georgia,serif;--sans:"Hanken Grotesk",system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;font:400 15px/1.5 var(--sans);color:var(--ink);background:var(--sand)}
+header{background:var(--ink);color:var(--white);padding:18px 5vw;display:flex;align-items:center;
+justify-content:space-between;gap:16px;flex-wrap:wrap;position:sticky;top:0;z-index:5;
+box-shadow:0 2px 12px rgba(0,0,0,.25)}
+header h1{margin:0;font:600 1.4rem var(--serif)}
+header h1 span{color:var(--sun)}
+header input{height:40px;min-width:240px;padding:0 16px;border:0;border-radius:999px;
+background:rgba(255,255,255,.12);color:var(--white);font:400 15px var(--sans)}
+header input::placeholder{color:rgba(255,255,255,.6)}
+header input:focus{outline:2px solid var(--sun)}
+main{padding:28px 5vw 48px;max-width:1400px;margin:0 auto}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:28px}
+.stat{background:var(--white);border-radius:16px;padding:18px 20px;box-shadow:0 2px 10px rgba(18,48,58,.08);
+border-top:4px solid var(--sun)}
+.stat:nth-child(2){border-top-color:var(--sea)}
+.stat:nth-child(3){border-top-color:var(--ink)}
+.stat:nth-child(4){border-top-color:var(--foam)}
+.stat b{display:block;font:600 2.2rem/1 var(--serif)}
+.stat small{color:var(--sea);font-weight:700;letter-spacing:.04em;text-transform:uppercase;font-size:.72rem}
+section{background:var(--white);border-radius:18px;padding:22px 22px 10px;margin-bottom:24px;
+box-shadow:0 2px 10px rgba(18,48,58,.08)}
+section h2{margin:0 0 14px;font:600 1.5rem var(--serif);display:flex;align-items:center;gap:10px}
+section h2 em{font:700 .8rem var(--sans);font-style:normal;background:var(--foam);color:var(--ink);
+border-radius:999px;padding:3px 11px}
+.scroll{overflow-x:auto;margin:0 -22px;padding:0 22px 12px}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:14px}
+th{position:sticky;top:0;background:var(--ink);color:var(--white);text-align:left;font-weight:700;
+font-size:.78rem;letter-spacing:.05em;text-transform:uppercase;padding:11px 12px;white-space:nowrap}
+th:first-child{border-radius:10px 0 0 10px}th:last-child{border-radius:0 10px 10px 0}
+td{padding:11px 12px;border-bottom:1px solid var(--foam);vertical-align:top}
+tbody tr:nth-child(even){background:#f4f9f7}
+tbody tr:hover{background:var(--foam)}
+td.ref{font-weight:700;color:var(--sea);white-space:nowrap}
+td.vacio{text-align:center;color:#7a8e93;padding:26px}
+.badge{display:inline-block;padding:3px 11px;border-radius:999px;font-size:.78rem;font-weight:700}
+.ok{background:#d8f0e2;color:#14683a}
+.ko{background:#fbdcdc;color:#a22626}
+.otro{background:var(--sand);color:var(--ink)}
+@media(max-width:600px){header{position:static}header input{width:100%}main{padding:20px 4vw}
+section{padding:18px 16px 6px}.scroll{margin:0 -16px;padding:0 16px 10px}}
+"""
+
+ADMIN_JS = """
+var q=document.getElementById('buscar');
+q.addEventListener('input',function(){
+  var t=q.value.trim().toLowerCase();
+  document.querySelectorAll('tbody tr[data-f]').forEach(function(tr){
+    tr.style.display=tr.textContent.toLowerCase().indexOf(t)>-1?'':'none';
+  });
+});
+"""
+
+
+def _tabla_html(titulo, cabeceras, filas, col_estado=None):
     cab = "".join(f"<th>{escape(c)}</th>" for c in cabeceras)
-    cuerpo = "".join(
-        "<tr>" + "".join(f"<td>{escape(str(v if v is not None else ''))}</td>" for v in fila) + "</tr>"
-        for fila in filas
-    ) or f'<tr><td colspan="{len(cabeceras)}">Sin datos</td></tr>'
-    return f"<h2>{escape(titulo)} ({len(filas)})</h2><table><tr>{cab}</tr>{cuerpo}</table>"
+    cuerpo = ""
+    for fila in filas:
+        celdas = ""
+        for i, v in enumerate(fila):
+            txt = escape(str(v if v is not None else ""))
+            if i == col_estado:
+                clase, etiqueta = {
+                    "confirmed": ("ok", "Confirmada"),
+                    "cancelled": ("ko", "Cancelada"),
+                }.get(str(v), ("otro", txt))
+                celdas += f'<td><span class="badge {clase}">{etiqueta}</span></td>'
+            elif i == 0 and cabeceras[0] == "Ref.":
+                celdas += f'<td class="ref">{txt}</td>'
+            else:
+                celdas += f"<td>{txt}</td>"
+        cuerpo += f"<tr data-f>{celdas}</tr>"
+    if not cuerpo:
+        cuerpo = f'<tr><td class="vacio" colspan="{len(cabeceras)}">Sin datos todavía</td></tr>'
+    return (f'<section><h2>{escape(titulo)} <em>{len(filas)}</em></h2>'
+            f'<div class="scroll"><table><thead><tr>{cab}</tr></thead>'
+            f'<tbody>{cuerpo}</tbody></table></div></section>')
 
 
 @app.get("/admin")
@@ -1182,20 +1255,31 @@ def admin_panel():
             "SELECT reference, name, email, service, service_date, service_time, guests "
             "FROM service_bookings ORDER BY id DESC LIMIT 200").fetchall()
         suscriptores = db.execute("SELECT email, created_at FROM subscribers ORDER BY id DESC").fetchall()
-    registrados = ", ".join(escape(u["name"]) for u in usuarios) or "nadie todavía"
+        def stat(numero, etiqueta):
+        return f'<div class="stat"><b>{numero}</b><small>{etiqueta}</small></div>'
+
     pagina = (
         '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="robots" content="noindex">'
-        '<meta name="viewport" content="width=device-width, initial-scale=1"><title>Panel</title>'
-        '<style>body{font-family:Arial,sans-serif;margin:24px;color:#12303a}'
-        'table{border-collapse:collapse;width:100%;margin-bottom:24px;font-size:14px}'
-        'th,td{border:1px solid #cfd8dc;padding:6px 8px;text-align:left}th{background:#12303a;color:#fff}</style>'
-        '</head><body><h1>La Palma Princess · Panel</h1>'
-        f'<p><strong>Registrados ({len(usuarios)}):</strong> {registrados}</p>'
-        + _tabla_html("Cuentas", ["Nombre", "Email", "Alta (UTC)"], usuarios)
-        + _tabla_html("Reservas de habitación", ["Ref.", "Nombre", "Email", "Habitación", "Hab.", "Entrada", "Salida", "Total", "Estado"], reservas)
+        '<meta name="viewport" content="width=device-width, initial-scale=1"><title>Panel · La Palma Princess</title>'
+        '<link rel="preconnect" href="https://fonts.googleapis.com">'
+        '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
+        '<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600'
+        '&family=Hanken+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">'
+        f'<style>{ADMIN_CSS}</style></head><body>'
+        '<header><h1>La Palma <span>Princess</span> · Panel</h1>'
+        '<input id="buscar" type="search" placeholder="Buscar nombre, email, referencia…" autocomplete="off">'
+        '</header><main>'
+        '<div class="stats">'
+        + stat(len(usuarios), "Cuentas")
+        + stat(len(reservas), "Reservas hab.")
+        + stat(len(servicios), "Reservas servicios")
+        + stat(len(suscriptores), "Suscriptores")
+        + '</div>'
+        + _tabla_html("Reservas de habitación", ["Ref.", "Nombre", "Email", "Habitación", "Hab.", "Entrada", "Salida", "Total", "Estado"], reservas, col_estado=8)
         + _tabla_html("Reservas de servicios", ["Ref.", "Nombre", "Email", "Servicio", "Fecha", "Hora", "Personas"], servicios)
+        + _tabla_html("Cuentas", ["Nombre", "Email", "Alta (UTC)"], usuarios)
         + _tabla_html("Suscriptores", ["Email", "Alta (UTC)"], suscriptores)
-        + '</body></html>'
+        + f'</main><script>{ADMIN_JS}</script></body></html>'
     )
     return pagina, 200, {"Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store",
                          "Referrer-Policy": "no-referrer", "X-Robots-Tag": "noindex"}
