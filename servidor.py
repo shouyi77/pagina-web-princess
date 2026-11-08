@@ -10,6 +10,7 @@ import logging
 import json
 import urllib.error
 import urllib.request
+from urllib.parse import quote
 
 from contextlib import contextmanager
 from datetime import date, datetime, timedelta, timezone
@@ -298,7 +299,272 @@ def send_async(recipient, subject, body, reply_to=None):
 def notify_hotel(subject, body, reply_to=None):
     """Aviso al buzón del propietario (HOTEL_EMAIL). 'Responder' contesta al cliente."""
     if HOTEL_EMAIL:
+        try:
+            body = email_aviso_hotel_html(subject, body)
+        except Exception:
+            app.logger.exception("No se pudo dar formato al aviso del hotel; se envía en texto simple")
         send_async(HOTEL_EMAIL, "[Web] " + subject, body, reply_to)
+
+
+# ───────────────────────── Diseño de los correos ─────────────────────────
+# Todos los correos usan la misma plantilla (email_layout) con los colores de la web.
+# Está hecha con tablas y estilos "en línea" porque es lo único que se ve bien en Gmail, Outlook y móviles.
+EMAIL_INK, EMAIL_SEA, EMAIL_SUN = "#12303a", "#2f7f86", "#f2b84b"
+EMAIL_SAND, EMAIL_FOAM, EMAIL_TEXT = "#efe6d6", "#dcebe6", "#2b3f46"
+_FUENTE_TEXTO = "Arial,Helvetica,sans-serif"
+_FUENTE_TITULO = "Georgia,'Times New Roman',serif"
+
+SERVICIOS_NOMBRES = {
+    "spa": "Aqua Princess Spa", "gym": "Gimnasio (máquinas)", "pilates": "Pilates",
+    "solarium": "Solarium", "padel1": "Pádel · Pista 1", "padel2": "Pádel · Pista 2",
+    "volley": "Arenero de vóley", "cancha": "Cancha de baloncesto y fútbol",
+    "restaurant": "Restaurante", "activity": "Actividad",
+}
+_DIAS = ("lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo")
+_MESES = ("enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
+          "agosto", "septiembre", "octubre", "noviembre", "diciembre")
+
+
+def email_fecha(valor):
+    """'2026-12-20' -> 'domingo 20 de diciembre de 2026' (si no se entiende, la deja como está)."""
+    try:
+        d = date.fromisoformat(str(valor))
+        return f"{_DIAS[d.weekday()]} {d.day} de {_MESES[d.month - 1]} de {d.year}"
+    except ValueError:
+        return str(valor)
+
+
+def email_euros(valor):
+    """1295.5 -> '1.295,50 €'"""
+    try:
+        texto = f"{float(valor):,.2f}"
+    except (TypeError, ValueError):
+        return str(valor)
+    return texto.replace(",", "X").replace(".", ",").replace("X", ".") + " €"
+
+
+def email_parrafo(texto):
+    return (f'<p style="margin:0 0 16px;font:400 16px/1.6 {_FUENTE_TEXTO};color:{EMAIL_TEXT};">{texto}</p>')
+
+
+def email_tabla(filas):
+    """Tabla de datos. filas = [(etiqueta, valor), ...]. Escapa los valores por ti."""
+    celdas = ""
+    for i, (etiqueta, valor) in enumerate(filas):
+        borde = "" if i == len(filas) - 1 else f"border-bottom:1px solid {EMAIL_FOAM};"
+        celdas += (
+            f'<tr><td style="padding:12px 16px;{borde}font:700 12px {_FUENTE_TEXTO};letter-spacing:.06em;'
+            f'text-transform:uppercase;color:{EMAIL_SEA};width:38%;vertical-align:top;">{escape(str(etiqueta))}</td>'
+            f'<td style="padding:12px 16px;{borde}font:400 15px/1.45 {_FUENTE_TEXTO};color:{EMAIL_INK};">'
+            f'{escape(str(valor))}</td></tr>')
+    return (f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
+            f'style="margin:6px 0 20px;background:#f6faf8;border:1px solid {EMAIL_FOAM};border-radius:12px;'
+            f'border-collapse:separate;">{celdas}</table>')
+
+
+def email_layout(titulo, contenido, boton=None, email_baja=None, preheader=""):
+    """Envuelve el contenido en la plantilla del hotel.
+    boton = (texto, url) o None. email_baja = email para el enlace de darse de baja (solo comerciales)."""
+    boton_html = ""
+    if boton:
+        boton_html = (
+            f'<table role="presentation" cellpadding="0" cellspacing="0" style="margin:8px 0 6px;"><tr>'
+            f'<td align="center" style="background:{EMAIL_SUN};border-radius:999px;">'
+            f'<a href="{escape(boton[1])}" target="_blank" style="display:inline-block;padding:14px 30px;'
+            f'font:700 16px {_FUENTE_TEXTO};color:{EMAIL_INK};text-decoration:none;">{escape(boton[0])}</a>'
+            f'</td></tr></table>')
+    baja_html = ""
+    if email_baja:
+        baja_html = (f'<p style="margin:12px 0 0;">Si no quieres recibir más avisos, puedes '
+                     f'<a href="{PUBLIC_BASE_URL}/desuscrito.html?email={quote(email_baja)}" '
+                     f'style="color:{EMAIL_SEA};text-decoration:underline;">darte de baja</a>.</p>')
+    return f"""<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{escape(titulo)}</title></head>
+<body style="margin:0;padding:0;background:{EMAIL_SAND};">
+<span style="display:none;max-height:0;overflow:hidden;opacity:0;color:{EMAIL_SAND};">{escape(preheader)}</span>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:{EMAIL_SAND};">
+<tr><td align="center" style="padding:28px 12px;">
+  <table role="presentation" width="600" cellpadding="0" cellspacing="0"
+         style="width:100%;max-width:600px;background:#fbfdfc;border-radius:18px;overflow:hidden;border-collapse:separate;">
+    <tr><td align="center" style="background:{EMAIL_INK};padding:30px 24px 26px;">
+      <div style="font:600 28px {_FUENTE_TITULO};color:#fbfdfc;letter-spacing:.5px;">La Palma <span style="color:{EMAIL_SUN};">Princess</span></div>
+      <div style="margin-top:6px;font:400 12px {_FUENTE_TEXTO};letter-spacing:.18em;text-transform:uppercase;color:{EMAIL_FOAM};">Hotel 4 estrellas · Fuencaliente</div>
+    </td></tr>
+    <tr><td style="background:{EMAIL_SUN};height:5px;font-size:0;line-height:0;">&nbsp;</td></tr>
+    <tr><td style="padding:34px 32px 26px;">
+      <h1 style="margin:0 0 18px;font:600 26px/1.2 {_FUENTE_TITULO};color:{EMAIL_INK};">{escape(titulo)}</h1>
+      {contenido}
+      {boton_html}
+    </td></tr>
+    <tr><td style="background:{EMAIL_FOAM};padding:22px 32px;text-align:center;font:400 13px/1.6 {_FUENTE_TEXTO};color:{EMAIL_INK};">
+      <strong>Hotel Princess La Palma</strong><br>
+      Carretera de la Costa, Cerca Vieja, 10 · 38749 Fuencaliente de La Palma<br>
+      Tel. +34 922 42 55 11 · WhatsApp 613 48 90 55<br>
+      <a href="mailto:{escape(HOTEL_EMAIL)}" style="color:{EMAIL_SEA};">{escape(HOTEL_EMAIL)}</a>
+      {baja_html}
+    </td></tr>
+  </table>
+</td></tr></table>
+</body></html>"""
+
+
+def email_bienvenida_html(name, email):
+    return email_layout(
+        "¡Bienvenido/a a La Palma Princess!",
+        email_parrafo(f"Hola <strong>{escape(name)}</strong>,")
+        + email_parrafo("Gracias por registrarte. Tu cuenta ya está creada y lista para usar.")
+        + email_parrafo("Con tu cuenta puedes reservar con tus datos ya rellenados y consultar o cancelar "
+                        "tus reservas desde «Mis reservas».")
+        + email_parrafo("Esperamos darte la bienvenida pronto en Fuencaliente."),
+        boton=("Ver habitaciones", PUBLIC_BASE_URL + "/habitaciones.html"),
+        email_baja=email,
+        preheader="Tu cuenta en La Palma Princess ya está creada.",
+    )
+
+
+def email_reserva_html(name, email, reference, token, checkin, checkout, total, room=None, rooms=None):
+    filas = [("Referencia", reference), ("Entrada", email_fecha(checkin)), ("Salida", email_fecha(checkout))]
+    try:
+        noches = (date.fromisoformat(checkout) - date.fromisoformat(checkin)).days
+        if noches > 0:
+            filas.append(("Noches", noches))
+    except ValueError:
+        pass
+    if room:
+        filas.append(("Habitación", f"{room} × {rooms}" if rooms and rooms > 1 else room))
+    filas.append(("Total orientativo", email_euros(total)))
+    return email_layout(
+        "Hemos recibido tu reserva",
+        email_parrafo(f"Hola <strong>{escape(name)}</strong>,")
+        + email_parrafo("Hemos recibido tu solicitud de reserva en el <strong>Hotel Princess La Palma</strong>. "
+                        "Estos son los datos:")
+        + email_tabla(filas)
+        + email_parrafo("Revisaremos tu solicitud y te responderemos por email en menos de 24 horas. "
+                        "Guarda tu referencia por si necesitas escribirnos."),
+        boton=("Gestionar o cancelar mi reserva", PUBLIC_BASE_URL + "/reservas.html?manage=" + token),
+        email_baja=email,
+        preheader=f"Reserva {reference} · {email_fecha(checkin)} → {email_fecha(checkout)}",
+    )
+
+
+def email_servicio_html(name, email, reference, service, service_date, service_time, guests, notes=""):
+    filas = [("Referencia", reference), ("Servicio", SERVICIOS_NOMBRES.get(service, service)),
+             ("Fecha", email_fecha(service_date)), ("Hora", service_time),
+             ("Asistentes", guests)]
+    if notes:
+        filas.append(("Comentarios", notes))
+    return email_layout(
+        "Reserva de servicio registrada",
+        email_parrafo(f"Hola <strong>{escape(name)}</strong>,")
+        + email_parrafo("Hemos registrado tu reserva. Estos son los datos:")
+        + email_tabla(filas)
+        + email_parrafo("Las tarifas se confirman al llegar al hotel. Si no puedes asistir, "
+                        "avísanos para liberar tu plaza."),
+        boton=("Ver todos los servicios", PUBLIC_BASE_URL + "/servicios.html"),
+        email_baja=email,
+        preheader=f"{SERVICIOS_NOMBRES.get(service, service)} · {email_fecha(service_date)} a las {service_time}",
+    )
+
+
+def email_suscripcion_html(email):
+    return email_layout(
+        "Suscripción confirmada",
+        email_parrafo("Gracias por suscribirte a las novedades de <strong>La Palma Princess</strong>.")
+        + email_parrafo("Te escribiremos solo cuando tengamos algo que merezca la pena: ofertas, "
+                        "novedades del hotel y propuestas para tu escapada a La Palma."),
+        boton=("Descubrir el hotel", PUBLIC_BASE_URL + "/index.html"),
+        email_baja=email,
+        preheader="Ya estás suscrito/a a las novedades de La Palma Princess.",
+    )
+
+
+def email_promocional_html(email):
+    ventajas = "".join(
+        f'<tr><td style="padding:5px 0;font:400 15px/1.5 {_FUENTE_TEXTO};color:{EMAIL_INK};">'
+        f'<span style="color:{EMAIL_SEA};font-weight:700;">✔</span>&nbsp; {t}</td></tr>'
+        for t in ("<strong>10% adicional</strong> sobre el precio base.",
+                  "Cancelación gratuita hasta 48 h antes.",
+                  "Cóctel de bienvenida incluido en Esencia de La Palma."))
+    return email_layout(
+        "¡Desconecta en el sur de La Palma con un 10% de descuento!",
+        email_parrafo("Hola,")
+        + email_parrafo("Te echamos de menos en <strong>La Palma Princess</strong>. Para celebrar la llegada de la "
+                        "nueva temporada, queremos ofrecerte una promoción exclusiva para tu próxima escapada a Fuencaliente.")
+        + email_parrafo("Disfruta de nuestras 7 piscinas al aire libre, del <em>Aqua Princess Spa</em> y de las "
+                        "mejores vistas al Atlántico, rodeado de naturaleza volcánica.")
+        + f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 22px;'
+          f'background:#f6faf8;border-left:4px solid {EMAIL_SUN};border-radius:6px;"><tr><td style="padding:14px 18px;">'
+          f'<table role="presentation" cellpadding="0" cellspacing="0">{ventajas}</table></td></tr></table>',
+        boton=("Reservar con descuento", PUBLIC_BASE_URL + "/reservas.html?promo=VERANO"),
+        email_baja=email,
+        preheader="10% de descuento para tu próxima escapada a La Palma.",
+    )
+
+
+def email_cancelacion_html(name, reference):
+    return email_layout(
+        "Reserva cancelada",
+        email_parrafo(f"Hola <strong>{escape(name)}</strong>,")
+        + email_parrafo("Te confirmamos que tu reserva ha sido cancelada:")
+        + email_tabla([("Referencia", reference), ("Estado", "Cancelada")])
+        + email_parrafo("Sentimos que no puedas venir esta vez. Cuando quieras volver a Fuencaliente, "
+                        "aquí estaremos."),
+        boton=("Hacer una nueva reserva", PUBLIC_BASE_URL + "/reservas.html"),
+        preheader=f"Reserva {reference} cancelada.",
+    )
+
+
+def email_modificacion_html(name, reference, token, checkin, checkout, room, rooms, total):
+    filas = [("Referencia", reference), ("Entrada", email_fecha(checkin)), ("Salida", email_fecha(checkout)),
+             ("Habitación", f"{room} × {rooms}" if rooms and rooms > 1 else room),
+             ("Total orientativo", email_euros(total))]
+    return email_layout(
+        "Tu reserva se ha actualizado",
+        email_parrafo(f"Hola <strong>{escape(name)}</strong>,")
+        + email_parrafo("Hemos actualizado tu reserva. Estos son los datos nuevos:")
+        + email_tabla(filas),
+        boton=("Gestionar mi reserva", PUBLIC_BASE_URL + "/reservas.html?manage=" + token),
+        preheader=f"Reserva {reference} actualizada.",
+    )
+
+
+def email_baja_newsletter_html():
+    return email_layout(
+        "Baja confirmada",
+        email_parrafo("Te has dado de baja de las novedades de <strong>La Palma Princess</strong>. "
+                      "No recibirás más correos comerciales.")
+        + email_parrafo("Si fue un error, puedes volver a suscribirte cuando quieras desde nuestra web."),
+        boton=("Volver a la web", PUBLIC_BASE_URL + "/index.html"),
+        preheader="Ya no recibirás más correos comerciales.",
+    )
+
+
+def email_cuenta_eliminada_html(name):
+    return email_layout(
+        "Tu cuenta ha sido eliminada",
+        email_parrafo(f"Hola <strong>{escape(name)}</strong>,")
+        + email_parrafo("Tu cuenta de La Palma Princess se ha eliminado de forma permanente.")
+        + email_parrafo("Gracias por haber confiado en nosotros. Siempre serás bienvenido/a en Fuencaliente."),
+        boton=("Visitar la web", PUBLIC_BASE_URL + "/index.html"),
+        preheader="Tu cuenta se ha eliminado de forma permanente.",
+    )
+
+
+def email_aviso_hotel_html(asunto, cuerpo):
+    """Aviso interno para el hotel: convierte las líneas 'Clave: valor' en una tabla."""
+    filas, texto = [], ""
+    for linea in str(cuerpo).splitlines():
+        for trozo in re.split(r"\s{2,}", linea.strip()):
+            if not trozo:
+                continue
+            clave, sep, valor = trozo.partition(": ")
+            if sep and 0 < len(clave) <= 30:
+                filas.append((clave, valor))
+            else:
+                texto += email_parrafo(escape(trozo))
+    return email_layout(asunto, texto + (email_tabla(filas) if filas else ""),
+                        preheader="Aviso automático de la web")
 
 
 def booking_total(room, rooms, adults, children, nights, resident, promo):
@@ -330,30 +596,9 @@ def room_availability(db, room, checkin, checkout):
     return max(0, ROOMS[room]["inventory"] - reserved)
 
 
-def send_booking_email(email, name, reference, token, checkin, checkout, total):
-    management_link = PUBLIC_BASE_URL + "/reservas.html?manage=" + token
-    body_html = f"""
-    <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f4f6f8;">
-        <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 8px; padding: 30px; border-top: 5px solid #12303a;">
-            <h1 style="color: #12303a; margin-top: 0;">Confirmación de Reserva</h1>
-            <p>Hola <strong>{escape(name)}</strong>,</p>
-            <p>Hemos recibido tu solicitud de reserva en el <strong>Hotel Princess La Palma</strong>. A continuación tienes los detalles:</p>
-
-            <table style="width: 100%; border-collapse: collapse; margin: 20px 0; background: #f8fafb; border: 1px solid #e2e8f0;">
-                <tr><td style="padding: 10px; border-bottom: 1px solid #e2e8f0;"><strong>Referencia:</strong></td><td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">{reference}</td></tr>
-                <tr><td style="padding: 10px; border-bottom: 1px solid #e2e8f0;"><strong>Entrada:</strong></td><td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">{checkin}</td></tr>
-                <tr><td style="padding: 10px; border-bottom: 1px solid #e2e8f0;"><strong>Salida:</strong></td><td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">{checkout}</td></tr>
-                <tr><td style="padding: 10px;"><strong>Total orientativo:</strong></td><td style="padding: 10px;"><strong>{total:.2f} EUR</strong></td></tr>
-            </table>
-
-            <p><a href="{management_link}" style="background-color: #12303a; color: white; padding: 10px 18px; text-decoration: none; border-radius: 4px; display: inline-block;">Gestionar o Cancelar Reserva</a></p>
-
-            <hr style="border: none; border-top: 1px solid #eeeeee; margin: 20px 0;">
-            <p style="font-size: 12px; color: #777;">Si deseas dejar de recibir avisos, haz clic en <a href="{PUBLIC_BASE_URL}/desuscrito.html?email={escape(email)}">darse de baja</a>.</p>
-        </div>
-    </div>
-    """
-    return send_email(email, f"Reserva {reference} - {HOTEL_NAME}", body_html)
+def send_booking_email(email, name, reference, token, checkin, checkout, total, room=None, rooms=None):
+    html = email_reserva_html(name, email, reference, token, checkin, checkout, total, room, rooms)
+    return send_email(email, f"Reserva {reference} - {HOTEL_NAME}", html)
 
 
 # ───────────────────────── Cuentas de usuario y sesiones ─────────────────────────
@@ -459,18 +704,7 @@ def register():
     attempts_add(ip_key)
 
     # Email de bienvenida (si falla el envío, la cuenta se crea igualmente)
-    html_bienvenida = f"""
-    <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f4f6f8;">
-        <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 8px; padding: 30px; border-top: 5px solid #12303a;">
-            <h1 style="color: #12303a; margin-top: 0;">¡Bienvenido/a a La Palma Princess!</h1>
-            <p>Hola <strong>{escape(name)}</strong>,</p>
-            <p>Gracias por registrarte. Tu cuenta ha sido creada correctamente.</p>
-            <p>Ahora podrás realizar tus reservas de forma más rápida y acceder a ofertas exclusivas.</p>
-            <hr style="border: none; border-top: 1px solid #eeeeee; margin: 20px 0;">
-            <p style="font-size: 12px; color: #777;">Si deseas darte de baja, haz clic en <a href="{PUBLIC_BASE_URL}/desuscrito.html?email={escape(email)}">darse de baja</a>.</p>
-        </div>
-    </div>
-    """
+    html_bienvenida = email_bienvenida_html(name, email)
     send_email(email, "¡Bienvenido/a a La Palma Princess!", html_bienvenida)
     notify_hotel("Nueva alta de usuario", f"Nombre: {name}\nEmail: {email}", reply_to=email)
 
@@ -524,8 +758,8 @@ def delete_account():
         db.execute("UPDATE service_bookings SET user_id = NULL WHERE user_id = ?", (user["id"],))
         db.execute("DELETE FROM users WHERE id = ?", (user["id"],))
         
-        send_async(user["email"], "Cuenta eliminada - La Palma Princess", 
-                   f"Hola {user['name']}:\n\nTu cuenta ha sido eliminada permanentemente.")
+        send_async(user["email"], "Cuenta eliminada - La Palma Princess",
+                   email_cuenta_eliminada_html(user["name"]))
         notify_hotel("Baja de usuario", f"El usuario {user['name']} ({user['email']}) ha eliminado su cuenta.")
 
     return jsonify({"message": "Cuenta eliminada permanentemente."}), 200
@@ -572,7 +806,7 @@ def cancel_my_booking(reference):
             return api_error("No se encontró una reserva activa tuya con esa referencia.", 404)
     email_sent = send_email(
         user["email"], f"Cancelación {reference.upper()} - {HOTEL_NAME}",
-        f"Hola {user['name']}:\n\nTu reserva {reference.upper()} ha sido cancelada."
+        email_cancelacion_html(user["name"], reference.upper())
     )
     notify_hotel(f"Reserva cancelada {reference.upper()}",
                  f"Referencia: {reference.upper()}\nCliente: {user['name']}\nEmail: {user['email']}",
@@ -670,7 +904,8 @@ def create_booking():
     except sqlite3.IntegrityError:
         return api_error("No se pudo registrar la solicitud. Inténtalo de nuevo.", 409)
 
-    email_sent = send_booking_email(email, name, reference, token, checkin.isoformat(), checkout.isoformat(), total)
+    email_sent = send_booking_email(email, name, reference, token, checkin.isoformat(), checkout.isoformat(), total,
+                                    room=room, rooms=rooms)
     notify_hotel(
         f"Nueva reserva {reference}",
         f"Referencia: {reference}\nCliente: {name}\nEmail: {email}\n"
@@ -720,7 +955,7 @@ def cancel_booking(token):
                              (hashlib.sha256(token.encode()).hexdigest(),)).fetchone()
     email_sent = send_email(
         booking["email"], f"Cancelación {booking['reference']} - {HOTEL_NAME}",
-        f"Hola {booking['name']}:\n\nTu reserva {booking['reference']} ha sido cancelada."
+        email_cancelacion_html(booking["name"], booking["reference"])
     )
     notify_hotel(f"Reserva cancelada {booking['reference']}",
                  f"Referencia: {booking['reference']}\nCliente: {booking['name']}\nEmail: {booking['email']}",
@@ -764,9 +999,8 @@ def update_booking(token):
         )
     email_sent = send_email(
         booking["email"], f"Actualización de reserva {booking['reference']} - {HOTEL_NAME}",
-        f"Hola {booking['name']}:\n\nTu reserva se ha actualizado.\n"
-        f"Entrada: {checkin.isoformat()}\nSalida: {checkout.isoformat()}\n"
-        f"Habitación: {room}\nTotal orientativo: {total:.2f} EUR."
+        email_modificacion_html(booking["name"], booking["reference"], token,
+                                checkin.isoformat(), checkout.isoformat(), room, rooms, total)
     )
     notify_hotel(
         f"Reserva modificada {booking['reference']}",
@@ -845,8 +1079,7 @@ def create_service_booking():
         return api_error("Ya existe una reserva de ese servicio para ese email y horario.", 409)
     email_sent = send_email(
         email, f"Reserva de servicio {reference} - {HOTEL_NAME}",
-        f"Hola {name}:\n\nHemos registrado tu reserva de {service} para {service_date.isoformat()} "
-        f"a las {service_time} ({guests} asistentes).\nReferencia: {reference}"
+        email_servicio_html(name, email, reference, service, service_date.isoformat(), service_time, guests, notes)
     )
     notify_hotel(
         f"Nueva reserva de servicio {reference}",
@@ -877,7 +1110,7 @@ def subscribe_newsletter():
         return jsonify({"message": "Ese email ya está suscrito."})
     email_sent = send_email(
         email, f"Suscripción confirmada - {HOTEL_NAME}",
-        f"Gracias por suscribirte a las novedades de {HOTEL_NAME}."
+        email_suscripcion_html(email)
     )
     notify_hotel("Nueva suscripción a la newsletter", f"Email: {email.lower()}", reply_to=email)
     return jsonify({
@@ -895,8 +1128,7 @@ def unsubscribe_newsletter():
     with connect_db() as db:
         removed = db.execute("DELETE FROM subscribers WHERE email = ?", (email,)).rowcount > 0
     if removed:
-        send_async(email, f"Baja confirmada - {HOTEL_NAME}",
-                   f"Te has dado de baja de las novedades de {HOTEL_NAME}. No recibirás más correos comerciales.")
+        send_async(email, f"Baja confirmada - {HOTEL_NAME}", email_baja_newsletter_html())
         notify_hotel("Baja de la newsletter", f"Email: {email}")
     return jsonify({"message": "Baja realizada." if removed else "Ese email no estaba suscrito."})
 
@@ -1062,9 +1294,7 @@ def enviar_email_promocional():
         return jsonify({"error": "Hace falta especificar un email válido"}), 400
 
     try:
-        ruta_plantilla = Path('email_marketing.html')
-        contenido_html = ruta_plantilla.read_text(encoding='utf-8') if ruta_plantilla.exists() else "<h1>Oferta 10% Dto</h1>"
-        contenido_html = contenido_html.replace('{{email}}', escape(email_destino))
+        contenido_html = email_promocional_html(email_destino)
         if send_email(email_destino, "¡Oferta especial 10% Dto! - Hotel Princess La Palma", contenido_html):
             return jsonify({"mensaje": f"Correo promocional enviado a {email_destino} correctamente."}), 200
         return jsonify({"error": "No se pudo enviar el correo promocional."}), 500
@@ -1072,96 +1302,6 @@ def enviar_email_promocional():
         app.logger.exception("Error en /enviar-email-promocional")
         return jsonify({"error": "Error procesando la plantilla del correo."}), 500
 
-
-@app.route('/api/email-bienvenida', methods=['POST'])
-def email_bienvenida():
-    datos = request.get_json(silent=True) or {}
-    nombre = escape(clean_text(datos.get('nombre', 'Usuario'), 100))
-    email = clean_text(datos.get('email'), 254)
-
-    if not email or not email_valid(email):
-        return jsonify({"error": "Hace falta un email válido"}), 400
-
-    html = f"""
-    <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f4f6f8;">
-        <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 8px; padding: 30px; border-top: 5px solid #12303a;">
-            <h1 style="color: #12303a; margin-top: 0;">¡Bienvenido/a a La Palma Princess!</h1>
-            <p>Hola <strong>{nombre}</strong>,</p>
-            <p>Gracias por registrarte en nuestra plataforma. Tu cuenta ha sido creada correctamente.</p>
-            <p>Ahora podrás realizar tus reservas de forma más rápida y acceder a ofertas exclusivas para tu estancia en Fuencaliente.</p>
-            <hr style="border: none; border-top: 1px solid #eeeeee; margin: 20px 0;">
-            <p style="font-size: 12px; color: #777;">
-                Si deseas dejar de recibir correos comerciales, puedes
-                <a href="{PUBLIC_BASE_URL}/desuscrito.html?email={escape(email)}">darse de baja aquí</a>.
-            </p>
-        </div>
-    </div>
-    """
-    enviado = send_email(email, "¡Bienvenido/a a La Palma Princess!", html)
-    
-    # NUEVO: Te envía un aviso a ti como propietario (usa tu variable HOTEL_EMAIL)
-    html_propietario = f"<h1>📢 Nuevo Registro</h1><p>El usuario <b>{nombre}</b> ({email}) se ha dado de alta en la web.</p>"
-    send_email(HOTEL_EMAIL, "📢 Nuevo registro de usuario en la web", html_propietario)
-
-    return jsonify({"mensaje": "Correo enviado correctamente" if enviado else "Usuario registrado, pero falló el envío de correo",
-                    "email_sent": enviado}), 200
-
-
-@app.route('/api/email-reserva', methods=['POST'])
-def email_reserva():
-    datos = request.get_json(silent=True) or {}
-    nombre = escape(clean_text(datos.get('nombre', 'Huésped'), 100))
-    email = clean_text(datos.get('email'), 254)
-    checkin = escape(clean_text(datos.get('checkin'), 20))
-    checkout = escape(clean_text(datos.get('checkout'), 20))
-    habitacion = escape(clean_text(datos.get('habitacion'), 40))
-    num_habitaciones = escape(clean_text(datos.get('num_habitaciones', 1), 3))
-    adultos = escape(clean_text(datos.get('adultos', 1), 3))
-    ninos = escape(clean_text(datos.get('ninos', 0), 3))
-
-    if not email or not email_valid(email):
-        return jsonify({"error": "Hace falta un email válido"}), 400
-
-    html = f"""
-    <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f4f6f8;">
-        <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 8px; padding: 30px; border-top: 5px solid #12303a;">
-            <h1 style="color: #12303a; margin-top: 0;">Confirmación de Reserva</h1>
-            <p>Hola <strong>{nombre}</strong>,</p>
-            <p>Hemos recibido tu solicitud de reserva en el <strong>Hotel Princess La Palma</strong>. A continuación detallamos los datos de tu estancia:</p>
-
-            <table style="width: 100%; border-collapse: collapse; margin: 20px 0; background: #f8fafb; border: 1px solid #e2e8f0;">
-                <tr><td style="padding: 10px; border-bottom: 1px solid #e2e8f0;"><strong>Fecha de entrada:</strong></td><td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">{checkin}</td></tr>
-                <tr><td style="padding: 10px; border-bottom: 1px solid #e2e8f0;"><strong>Fecha de salida:</strong></td><td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">{checkout}</td></tr>
-                <tr><td style="padding: 10px; border-bottom: 1px solid #e2e8f0;"><strong>Tipo de habitación:</strong></td><td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">{habitacion} ({num_habitaciones} hab.)</td></tr>
-                <tr><td style="padding: 10px;"><strong>Huéspedes:</strong></td><td style="padding: 10px;">{adultos} adulto(s), {ninos} niño(s)</td></tr>
-            </table>
-
-            <p>Te responderemos por email en menos de 24 hours para formalizar el proceso.</p>
-            <hr style="border: none; border-top: 1px solid #eeeeee; margin: 20px 0;">
-            <p style="font-size: 12px; color: #777;">
-                Si deseas cancelar tu suscripción o dejar de recibir estos avisos, haz clic en
-                <a href="{PUBLIC_BASE_URL}/desuscrito.html?email={escape(email)}">darse de baja</a>.
-            </p>
-        </div>
-    </div>
-    """
-    enviado = send_email(email, "Confirmación de tu reserva - Hotel Princess La Palma", html)
-    
-    # NUEVO: Te envía un aviso detallado a ti como propietario (usa tu variable HOTEL_EMAIL)
-    html_propietario = f"""
-    <h1>🚨 NUEVA RESERVA EN LA WEB</h1>
-    <p>Un cliente ha completado una solicitud de reserva:</p>
-    <ul>
-        <li><b>Cliente:</b> {nombre} ({email})</li>
-        <li><b>Habitación:</b> {habitacion} ({num_habitaciones} habs.)</li>
-        <li><b>Estancia:</b> del {checkin} al {checkout}</li>
-        <li><b>Huéspedes:</b> {adultos} Adultos, {ninos} Niños</li>
-    </ul>
-    """
-    send_email(HOTEL_EMAIL, "🚨 Nueva Solicitud de Reserva Recibida", html_propietario)
-
-    return jsonify({"mensaje": "Correo enviado correctamente" if enviado else "Reserva registrada, pero falló el envío de correo",
-                    "email_sent": enviado}), 200
 
 # ───────────────────────── Panel de administración (lista de registros) ─────────────────────────
 # Solo funciona si en Render pones la variable ADMIN_KEY. Se abre en: /admin?clave=TU_CLAVE
