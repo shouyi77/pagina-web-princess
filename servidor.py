@@ -347,6 +347,33 @@ def email_parrafo(texto):
     return (f'<p style="margin:0 0 16px;font:400 16px/1.6 {_FUENTE_TEXTO};color:{EMAIL_TEXT};">{texto}</p>')
 
 
+EMAIL_REDES = (
+    ("Instagram", "https://www.instagram.com/princesshotels/"),
+    ("Facebook", "https://www.facebook.com/PrincessHotelsResorts/"),
+    ("X", "https://x.com/PrincessHotels"),
+    ("TikTok", "https://www.tiktok.com/@princesshotelsresorts"),
+    ("YouTube", "https://www.youtube.com/channel/UC6Jx3EjAbSS7NRlfNhyW1PA"),
+)
+
+
+def email_utm(url, campana):
+    """Añade parámetros UTM al enlace para medir en Google Analytics de qué correo llegan las visitas."""
+    union = "&" if "?" in url else "?"
+    return f"{url}{union}utm_source=email&utm_medium=correo&utm_campaign={quote(campana)}"
+
+
+def email_app_aviso():
+    """Caja que invita a instalar la app (la web instalable)."""
+    return (
+        f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0 4px;'
+        f'background:{EMAIL_FOAM};border-radius:12px;"><tr><td style="padding:16px 20px;'
+        f'font:400 14px/1.55 {_FUENTE_TEXTO};color:{EMAIL_INK};">'
+        f'<strong style="font-size:15px;">📱 Lleva el hotel en tu móvil</strong><br>'
+        f'Instala nuestra app en Android o iPhone: abre la web y pulsa «Instalar app». '
+        f'<a href="{PUBLIC_BASE_URL}/index.html" style="color:{EMAIL_SEA};font-weight:700;">Abrir la web</a>'
+        f'</td></tr></table>')
+
+
 def email_tabla(filas):
     """Tabla de datos. filas = [(etiqueta, valor), ...]. Escapa los valores por ti."""
     celdas = ""
@@ -362,17 +389,28 @@ def email_tabla(filas):
             f'border-collapse:separate;">{celdas}</table>')
 
 
-def email_layout(titulo, contenido, boton=None, email_baja=None, preheader=""):
+def email_layout(titulo, contenido, boton=None, email_baja=None, preheader="", imagen=None, campana=None):
     """Envuelve el contenido en la plantilla del hotel.
-    boton = (texto, url) o None. email_baja = email para el enlace de darse de baja (solo comerciales)."""
+    boton = (texto, url) o None. email_baja = email para el enlace de darse de baja (solo comerciales).
+    imagen = (archivo de la carpeta fotos, texto alternativo) o None. campana = nombre para medir con UTM."""
     boton_html = ""
     if boton:
+        url_boton = email_utm(boton[1], campana) if campana else boton[1]
         boton_html = (
             f'<table role="presentation" cellpadding="0" cellspacing="0" style="margin:8px 0 6px;"><tr>'
             f'<td align="center" style="background:{EMAIL_SUN};border-radius:999px;">'
-            f'<a href="{escape(boton[1])}" target="_blank" style="display:inline-block;padding:14px 30px;'
+            f'<a href="{escape(url_boton)}" target="_blank" style="display:inline-block;padding:14px 30px;'
             f'font:700 16px {_FUENTE_TEXTO};color:{EMAIL_INK};text-decoration:none;">{escape(boton[0])}</a>'
             f'</td></tr></table>')
+    imagen_html = ""
+    if imagen:
+        imagen_html = (
+            f'<tr><td style="padding:0;font-size:0;line-height:0;">'
+            f'<img src="{PUBLIC_BASE_URL}/fotos/{quote(imagen[0])}" width="600" alt="{escape(imagen[1])}" '
+            f'style="display:block;width:100%;max-width:600px;height:auto;border:0;"></td></tr>')
+    redes_html = " &nbsp;·&nbsp; ".join(
+        f'<a href="{escape(url)}" target="_blank" style="color:{EMAIL_INK};font-weight:700;'
+        f'text-decoration:none;">{escape(nombre)}</a>' for nombre, url in EMAIL_REDES)
     baja_html = ""
     if email_baja:
         baja_html = (f'<p style="margin:12px 0 0;">Si no quieres recibir más avisos, puedes '
@@ -392,12 +430,14 @@ def email_layout(titulo, contenido, boton=None, email_baja=None, preheader=""):
       <div style="margin-top:6px;font:400 12px {_FUENTE_TEXTO};letter-spacing:.18em;text-transform:uppercase;color:{EMAIL_FOAM};">Hotel 4 estrellas · Fuencaliente</div>
     </td></tr>
     <tr><td style="background:{EMAIL_SUN};height:5px;font-size:0;line-height:0;">&nbsp;</td></tr>
+    {imagen_html}
     <tr><td style="padding:34px 32px 26px;">
       <h1 style="margin:0 0 18px;font:600 26px/1.2 {_FUENTE_TITULO};color:{EMAIL_INK};">{escape(titulo)}</h1>
       {contenido}
       {boton_html}
     </td></tr>
     <tr><td style="background:{EMAIL_FOAM};padding:22px 32px;text-align:center;font:400 13px/1.6 {_FUENTE_TEXTO};color:{EMAIL_INK};">
+      <div style="margin-bottom:12px;font-size:14px;"><strong>Síguenos:</strong> {redes_html}</div>
       <strong>Hotel Princess La Palma</strong><br>
       Carretera de la Costa, Cerca Vieja, 10 · 38749 Fuencaliente de La Palma<br>
       Tel. +34 922 42 55 11 · WhatsApp 613 48 90 55<br>
@@ -416,10 +456,13 @@ def email_bienvenida_html(name, email):
         + email_parrafo("Gracias por registrarte. Tu cuenta ya está creada y lista para usar.")
         + email_parrafo("Con tu cuenta puedes reservar con tus datos ya rellenados y consultar o cancelar "
                         "tus reservas desde «Mis reservas».")
-        + email_parrafo("Esperamos darte la bienvenida pronto en Fuencaliente."),
+        + email_parrafo("Esperamos darte la bienvenida pronto en Fuencaliente.")
+        + email_app_aviso(),
         boton=("Ver habitaciones", PUBLIC_BASE_URL + "/habitaciones.html"),
         email_baja=email,
         preheader="Tu cuenta en La Palma Princess ya está creada.",
+        imagen=("foto2.jpg", "Piscinas de La Palma Princess al atardecer"),
+        campana="bienvenida",
     )
 
 
@@ -472,10 +515,13 @@ def email_suscripcion_html(email):
         "Suscripción confirmada",
         email_parrafo("Gracias por suscribirte a las novedades de <strong>La Palma Princess</strong>.")
         + email_parrafo("Te escribiremos solo cuando tengamos algo que merezca la pena: ofertas, "
-                        "novedades del hotel y propuestas para tu escapada a La Palma."),
+                        "novedades del hotel y propuestas para tu escapada a La Palma.")
+        + email_app_aviso(),
         boton=("Descubrir el hotel", PUBLIC_BASE_URL + "/index.html"),
         email_baja=email,
         preheader="Ya estás suscrito/a a las novedades de La Palma Princess.",
+        imagen=("foto5.jpg", "Vista del hotel y las piscinas sobre el Atlántico"),
+        campana="suscripcion",
     )
 
 
@@ -496,9 +542,11 @@ def email_promocional_html(email):
         + f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 22px;'
           f'background:#f6faf8;border-left:4px solid {EMAIL_SUN};border-radius:6px;"><tr><td style="padding:14px 18px;">'
           f'<table role="presentation" cellpadding="0" cellspacing="0">{ventajas}</table></td></tr></table>',
-        boton=("Reservar con descuento", PUBLIC_BASE_URL + "/reservas.html?promo=VERANO"),
+        boton=("Reservar con descuento", PUBLIC_BASE_URL + "/reservas.html"),
         email_baja=email,
         preheader="10% de descuento para tu próxima escapada a La Palma.",
+        imagen=("pisci.jpg", "Piscinas de La Palma Princess con vistas al océano Atlántico"),
+        campana="oferta_temporada",
     )
 
 
