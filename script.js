@@ -1770,7 +1770,7 @@ const API_BASE = window.PRINCESS_API_BASE ||
 	btn.className = 'install-btn';
 	btn.textContent = window.siteText('Instalar app');
 	btn.setAttribute('aria-haspopup', 'dialog');
-	btn.hidden = !esIOS && !esAndroid;
+	btn.hidden = false; // siempre visible (en ordenador también); si no hay instalación nativa, abre la guía
 	document.body.appendChild(btn);
 
 	let promptInstalar = null;
@@ -1802,7 +1802,20 @@ const API_BASE = window.PRINCESS_API_BASE ||
 				'Abre el menú del navegador (⋮) y elige «Instalar app» o «Añadir a pantalla de inicio».',
 				'Confirma la instalación y abre la app desde tu pantalla de inicio.'
 			]
-			: ['Usa la opción «Instalar» o «Añadir a pantalla de inicio» del menú del navegador.'];
+			: /edg\/|chrome\//i.test(navigator.userAgent)
+				? [
+					'Pulsa el icono de instalar (un monitor con una flecha) a la derecha de la barra de direcciones, o abre el menú (⋮) y elige «Instalar La Palma Princess».',
+					'Confirma con «Instalar». Se abrirá como una aplicación y tendrás un acceso directo.'
+				]
+				: /safari\//i.test(navigator.userAgent) && !/firefox\//i.test(navigator.userAgent)
+					? [
+						'En el menú Archivo, elige «Añadir al Dock».',
+						'Confirma con «Añadir». Después, abre la app desde el Dock.'
+					]
+					: [
+						'Este navegador no permite instalar aplicaciones web en el ordenador.',
+						'Abre esta página en Chrome o Edge, o instálala desde tu móvil Android o iPhone.'
+					];
 	steps.forEach(function (step) {
 		const item = document.createElement('li');
 		item.textContent = window.siteText(step);
